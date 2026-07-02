@@ -1,92 +1,108 @@
-# ricing-test — status / handoff (checkpoint before context compaction)
+# ricing-test — status / current state
 
-A NixOS + Hyprland + Quickshell rice, prototyped as an **aarch64 VM in UTM** on an Apple Silicon Mac.
-The actual rice lives in **plain portable dotfiles** (`dotfiles/`); NixOS is the reproducible sandbox.
+A **Catppuccin Mocha Hyprland + Quickshell rice**, prototyped as an **aarch64 NixOS VM in UTM**
+on an Apple Silicon Mac. The actual rice lives in **plain portable dotfiles** (`dotfiles/`);
+NixOS is just the reproducible sandbox. Eventual daily-driver target: **Fedora (Hyprland spin)**.
 
 ## Where things live / workflow
-- **Repo:** `/Users/callum/Desktop/coding/ricing-test` (Mac) → GitHub `callum-gander/ricing-test` (public).
-- **VM:** NixOS 25.11 aarch64 in UTM. IP `192.168.64.5`. `ssh callum@192.168.64.5` (pw `nixos`). sudo pw `nixos`.
-- **Edit loop:** edit dotfiles on Mac → `git commit` + `git push` → in VM `cd ~/ricing-test && git pull`.
-  - Most dotfiles **hot-reload** (Quickshell `shell.qml`, foot/rofi/mako, etc.).
-  - **`hyprland.conf` does NOT hot-reload** — it's a read-only /nix/store copy; changes need `sudo nixos-rebuild switch --flake ~/ricing-test#vm` then `hyprctl reload` (or a session restart / reboot).
-  - Adding **packages / NixOS options** → always needs `nixos-rebuild switch`.
-- **Restart Hyprland session:** `Super+Shift+E` (exit) → greetd autologin brings it back.
-- **If the Quickshell bar vanishes** (QML error): `pkill -f quickshell; quickshell` in a terminal to see the error.
-- **Last known-good pushed commit:** `a99fb71` (the VM is running this — everything below "WORKING" is live).
+- **Repo:** `/Users/callum/Desktop/coding/ricing-test` (Mac) → GitHub `callum-gander/ricing-test`.
+- **VM:** NixOS aarch64 in UTM. `ssh callum@192.168.64.5` (pw `nixos`). sudo pw `nixos`.
+- **Edit loop:** edit on Mac → `git commit`/`push` → in VM `cd ~/ricing-test && git pull`.
+  - Most dotfiles **hot-reload** (Quickshell `shell.qml`, foot/rofi/mako/swaync, shaders via `hyprctl reload`).
+  - **`hyprland.conf` does NOT hot-reload** — it's a read-only `/nix/store` copy; changes need
+    `sudo nixos-rebuild switch --flake ~/ricing-test#vm` then a `hyprctl reload` or session restart.
+  - **Packages / NixOS options / plugins** → always need `nixos-rebuild switch`.
+- **Plugins load on SESSION START** (via an `exec-once` loader — see Plugins below). After a rebuild
+  that touches plugins, **restart the Hyprland session** (`Super+Shift+E` → autologin, or `sudo reboot`)
+  or they won't be active. `hyprctl plugin list` should be non-empty once loaded.
+- **If the Quickshell bar vanishes** (QML error): `pkill -f quickshell; quickshell` in a terminal.
 
-## Config architecture (important)
-- `flake.nix` — inputs (nixpkgs unstable, home-manager) + `nixosConfigurations.vm`. Passes `inputs` via `specialArgs` and `home-manager.extraSpecialArgs`.
-- `hosts/vm/configuration.nix` — system layer (packages, services). Takes `{ config, pkgs, lib, inputs, ... }`.
-- `hosts/vm/hardware.nix` — VM-specific disks (the one non-portable file; regenerated at install).
-- `home/callum.nix` — home-manager: symlinks dotfiles into `~/.config` via `mkOutOfStoreSymlink` (live/hot-reload).
-  - **Exception:** `hyprland.conf` is a **read-only store copy** (`.source = ../dotfiles/hypr/hyprland.conf`), NOT mkOutOfStoreSymlink — see gotcha below.
-- `dotfiles/` — the portable rice (hypr, quickshell, foot, ghostty, fuzzel, rofi, mako, swaync, zellij, nvim, starship, hypr/shaders).
+## Config architecture
+- `flake.nix` — inputs are just **nixpkgs (unstable) + home-manager**. HM has `backupFileExtension = "hm-bak"`
+  (so a reshaped/pre-existing dotfile is backed up, not a "would be clobbered" abort). Passes `inputs`
+  via specialArgs/extraSpecialArgs (currently unused by the modules — harmless).
+- `hosts/vm/configuration.nix` — system layer. **Uses the nixpkgs Hyprland** (no flake package override).
+  greetd, PipeWire, fonts, all system packages.
+- `hosts/vm/hardware.nix` — VM disks (the one non-portable file; regenerated at install).
+- `home/callum.nix` — home-manager: symlinks dotfiles into `~/.config`, the plugin loader, user apps, wallpaper.
+  - Most dotfiles use `mkOutOfStoreSymlink` (live/hot-reload).
+  - **`hyprland.conf` is a read-only store COPY** (`.source = ../dotfiles/...`), NOT a symlink — see gotcha.
+  - **`hypr/shaders` is a whole-DIR symlink** (so both `glow.frag` + `bloom.frag` are live).
+- `dotfiles/` — the portable rice.
 
-## WORKING (live at commit a99fb71)
-- **Hyprland**: Mocha theme, gradient/animated borders, rounding, blur, active/inactive opacity, bouncy pop-in windows + slide-fade workspaces. Scratchpad (`Super+S`/`Super+Shift+S`), resize submap (`Super+R`+arrows), per-app window rules (block syntax `windowrule { name=...; match:class=...; float=true }`).
-- **Quickshell bar** (`dotfiles/quickshell/shell.qml`): logo(→rofi) · live workspaces (special/negative filtered out) · **MPRIS now-playing** · clock | **CPU% + RAM%** (chip/memory icons) · audio · network · bluetooth · tray.
-  - **Control-centre popovers** (audio/network/bluetooth/system): native `PopupWindow`, Mocha-styled, **animated fade+slide**, auto-height, **click-outside dismiss** (`HyprlandFocusGrab`). Audio = draggable volume + "Open pavucontrol"; net = status + nm-connection-editor; bt = status + blueman; system = CPU/RAM bars + load + uptime + "Open btop".
-  - Icons built with `String.fromCharCode(0xXXXX)` (see glyph gotcha).
-- **Terminals**: Ghostty (default, launched `env LIBGL_ALWAYS_SOFTWARE=1 ghostty`), **foot** fallback (`Super+Shift+Return`). kitty installed but segfaults in VM.
-- **Launcher**: rofi (`Super+D`, all element states pinned for contrast). fuzzel still installed.
-- **Notifications**: swaync (`Super+N` toggles centre). mako installed, not autostarted.
-- **Lock/idle**: hyprlock (`Super+L`, `programs.hyprlock.enable` for PAM), hypridle (5 min → lock).
-- **Theming**: Catppuccin Mocha everywhere (foot/ghostty/fuzzel/rofi/mako/swaync/zellij/nvim/starship/hypr/quickshell). Nerd Font JetBrainsMono. Bibata cursor (`home.pointerCursor`).
-- **CLI rice**: starship prompt, fastfetch, zellij, lazygit, **LazyVim** (nvim, bootstraps on first launch), eza/bat aliases, btop.
-- **Wallpaper**: Mocha radial gradient PNG generated by Nix (imagemagick) at `~/Pictures/wall.png`, shown via **swaybg** (hyprpaper failed on VM GL). exec-once `swaybg -i /home/callum/Pictures/wall.png -m fill`.
-- **Screen shader** (`dotfiles/hypr/shaders/glow.frag`): `decoration:screen_shader`. Confirmed applying (oversaturation visible). Currently in **strong TEST mode** (vibrance 1.5 + real 5x5 bloom/halation) — needs dialling back to subtle once confirmed.
-- **mpv** with `mpvScripts.mpris` → drives the bar's MPRIS module. Test: `mpv "https://ice1.somafm.com/groovesalad-128-mp3"`.
-- **SSH** (`services.openssh`) for Mac-side work.
+> **We are NOT using the Hyprland flake.** We tried it to get first-party plugins, but the official
+> `hyprland-plugins` flake **dropped hyprexpo + hyprtrails as unmaintained** (gone since v0.55), which made
+> the loader reference a missing attribute and **aborted every rebuild at eval** (that's why apps/plugins/greeter
+> silently never installed for a while). nixpkgs Hyprland + nixpkgs `hyprlandPlugins` is simpler, needs no
+> compile, and is guaranteed ABI-matched. (A stale, now-unused `hyprland.cachix.org` substituter is still in
+> `configuration.nix` — harmless, can be removed.)
 
-## IN PROGRESS — flake-Hyprland switch + plugins + ReGreet (UNCOMMITTED on Mac, NOT pushed, currently WON'T BUILD)
-Goal: get first-party plugins (only in the Hyprland flake, not nixpkgs) + a graphical greeter.
-**Done (uncommitted):**
-- `flake.nix`: added `hyprland` + `hyprland-plugins` inputs (plugins follow hyprland).
-- `configuration.nix`: added `inputs` to args; `programs.hyprland.package`/`portalPackage` = flake; hyprland.cachix substituter+key (to download prebuilt, avoid ~20-min compile); `programs.regreet.enable = true`.
-- `dotfiles/hypr/shaders/glow.frag`: rewritten with real bloom.
-**REMAINING to make it build + work (do these, then commit/push/rebuild/reboot):**
-1. **BROKEN: greetd conflict.** `configuration.nix` now has `programs.regreet.enable` (sets greetd `default_session`) AND still the old `default_session = tuigreet` block → eval conflict. The edit to remove the tuigreet block FAILED to match. **Read the current `services.greetd` block and delete the `default_session = { ... tuigreet ... }` part, keeping only `initial_session` (boot autologin = safety net so a GL-broken greeter can't lock you out).**
-2. **`home/callum.nix`**: add `inputs` to args (`{ config, pkgs, lib, inputs, ... }:`), and replace the line `# (Hyprland plugins need the flake-Hyprland setup ...)` with:
-   ```nix
-   xdg.configFile."hypr/load-plugins.sh" = {
-     executable = true;
-     text = ''
-       #!/bin/sh
-       hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprexpo}/lib/libhyprexpo.so
-       hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprbars}/lib/libhyprbars.so
-       hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprtrails}/lib/libhyprtrails.so
-       hyprctl reload
-     '';
-   };
-   ```
-3. **`dotfiles/hypr/hyprland.conf`**: after the `swaybg` exec-once add `exec-once = ~/.config/hypr/load-plugins.sh`; and replace the line `# (hyprexpo/hyprbars keybind + config go here ...)` with:
-   ```
-   bind = $mod, grave, hyprexpo:expo, toggle
-   plugin {
-       hyprexpo { columns = 3; gap_size = 6; bg_col = rgb(181825); workspace_method = center current; enable_gesture = false }
-       hyprbars { bar_height = 26; bar_color = rgb(1e1e2e); col.text = rgb(cdd6f4); bar_text_size = 11; bar_text_font = JetBrainsMono Nerd Font }
-       hyprtrails { color = rgba(89b4faaa) }
-   }
-   ```
-4. Commit, push, in VM: `git pull` → `sudo nixos-rebuild switch --flake ~/ricing-test#vm` (downloads flake Hyprland; if cachix has no aarch64 build it will COMPILE — could be slow) → `sudo reboot`.
-   - Risk: flake Hyprland is newer than nixpkgs → a config directive or two may need tweaks (expect a config-error banner or two, fixable like before).
-   - ReGreet is GTK4/GL → may be blank in the VM; boot autologin means that's harmless (reboot recovers). Test it via `Super+Shift+E` (logout).
+## WORKING (live)
+- **Hyprland** (nixpkgs 0.55.x): Mocha theme, gradient/animated borders, rounding, blur, active/inactive
+  opacity, bouncy pop-in + slide-fade animations. Scratchpad (`Super+S`), resize submap (`Super+R`+arrows),
+  per-app window rules (block syntax).
+- **Plugins** (nixpkgs `hyprlandPlugins`, ABI-matched, loaded at runtime):
+  - **hyprbars** — per-window title bars.
+  - **hyprspace** — workspace **overview** (`Alt+Tab` in the VM / `Super+Tab` on metal). Drag windows
+    between the workspace thumbnails. This is the maintained replacement for the removed hyprexpo.
+- **Quickshell bar** (`dotfiles/quickshell/shell.qml`): logo(→rofi) · live workspaces · MPRIS now-playing ·
+  clock | CPU% + RAM% · audio · network · bluetooth · tray. **Animated control-centre popovers**
+  (audio/network/bluetooth/system) with click-outside dismiss. Icons via `String.fromCharCode`.
+- **Apps installed** (`home.packages`): **firefox, vscode, obsidian, claude-code** (CLI). In the VM's soft GL
+  they may need `LIBGL_ALWAYS_SOFTWARE=1 firefox` / `code --disable-gpu` / `obsidian --disable-gpu`.
+- **Terminals**: Ghostty (default, `LIBGL_ALWAYS_SOFTWARE=1`), **foot** fallback (`Super+Shift+Return`).
+- **Launcher**: rofi (`Super+D`). **Notifications**: swaync (`Super+N`). **Lock/idle**: hyprlock (`Super+L`) + hypridle.
+- **Greeter**: **tuigreet** (TTY — renders in the VM) on logout; boot is autologin. ReGreet is wired but **metal-only** (see below).
+- **Theming**: Catppuccin Mocha everywhere; JetBrainsMono Nerd Font; Bibata cursor (`home.pointerCursor`).
+- **CLI rice**: starship, fastfetch, zellij, lazygit, **LazyVim**, eza/bat, btop.
+- **Wallpaper**: Mocha radial-gradient PNG (Nix/imagemagick) via **swaybg**.
+- **Screen shader**: `glow.frag` — a **per-pixel** colour grade (vibrance + contrast + highlight self-glow +
+  vignette). Damage-safe, no ghosting. (The old neighbour-sampling bloom was scrapped — see gotcha.)
 
-## Not done / deferred
-- **Plymouth boot splash**: enabled + `virtio_gpu` in initrd, but **not visible in the VM** (fast boot / virtual display). Left as-is; a metal thing.
-- **awww** animated wallpaper: skipped — needs its own flake input + an animated source; static gradient uses swaybg reliably instead.
-- **Shader**: still in loud TEST mode — dial `glow.frag` down to subtle (VIBRANCE ~1.12, GLOW ~0.3, smaller SPREAD) once the bloom is confirmed.
+## Metal-only (ready, but off in the VM)
+Flip these on when the config moves to real hardware (Fedora):
+- **ReGreet** (graphical GTK4 greeter): `programs.regreet.enable = true` in `configuration.nix`. Off in the VM
+  because (a) GTK4 won't render under the VM's GL, and (b) its default Cantarell font fails to build on aarch64.
+  A `lib.mkIf` hands `greetd`'s `default_session` from tuigreet over to ReGreet automatically when enabled.
+- **Real bloom/halation shader** (`bloom.frag`): a dense 13×13 Gaussian halo. Too heavy for the VM's software GL,
+  and it needs full-screen redraws. To switch (all in `hyprland.conf`, then `hyprctl reload`): point
+  `decoration:screen_shader` at `bloom.frag` **and** uncomment the `debug { damage_tracking = 0 }` block.
+- **Plymouth** boot splash: enabled + `virtio_gpu` in initrd, but not visible in the VM (fast/virtual display).
 
-## Hard-won VM gotchas (do not relearn)
-- **VM GL is GLES-only for the compositor.** Client desktop-GL apps fail: kitty segfaults, ghostty needs `LIBGL_ALWAYS_SOFTWARE=1`, hyprpaper/hyprlock/ReGreet may not render. foot/swaybg (CPU) are reliable.
-- **Qt needs `QT_QPA_PLATFORM=wayland`** (set in hyprland.conf `env`) or Quickshell picks xcb and the bar is blank.
-- **hyprland.conf must be a READ-ONLY store copy, never a writable symlink.** When Hyprland can't find a config it autogenerates a default and writes it THROUGH a writable symlink into the repo, clobbering it (541-byte file) and breaking git repeatedly. (Also: don't `rm` it while Hyprland runs — it regenerates it faster than rm deletes.)
-- **Non-ASCII/Nerd-Font glyphs get stripped to empty when written to files here.** Use `String.fromCharCode(0xXXXX)` in QML, `\uXXXX` escapes in TOML. Box-drawing chars in comments break Edit string-matching.
-- **Hyprland config is version-fast-moving:** `windowrulev2`→`windowrule` (block syntax now, needs a `name`), `togglesplit`→`layoutmsg togglesplit`, `pseudotile` gone, shader must be `#version 300 es`. `tuigreet` is `pkgs.tuigreet` (not `greetd.tuigreet`). `rofi-wayland` merged into `rofi`.
-- **nixpkgs `hyprlandPlugins` is empty on our pin** — first-party plugins only via the Hyprland flake (the in-progress work above).
-- **git sync in VM:** use `git pull`; if it ever errors, `git fetch && git reset --hard origin/master` then restore `hosts/vm/hardware.nix` from `~/hw-real.nix`. Re-clone as last resort.
+## Hard-won gotchas (do not relearn)
+- **Mac→VM keyboard: UTM maps ⌘ (Cmd) → Super.** So every `Super+<letter>` WM bind **shadows the app's
+  `Cmd+<letter>`** (e.g. `Super+S` scratchpad vs Cmd+S save, `Super+F` fullscreen vs Cmd+F find). AND macOS
+  **grabs some Cmd combos before the VM** — `Cmd+Tab` (app switcher), `Cmd+grave`, `Cmd+Space` (Spotlight) —
+  so those keys never reach Hyprland. Fix: use `Alt`(Option)+ combos for clashing WM binds (e.g. overview is
+  `Alt+Tab`). This is a VM artifact; on metal Super isn't a Mac key, so it all disappears.
+- **Hyprland plugins must be ABI-matched to the running Hyprland**, and they **load at runtime** via
+  `hyprctl plugin load` (our `~/.config/hypr/load-plugins.sh`, run by `exec-once`). Consequences: use nixpkgs
+  plugins with nixpkgs Hyprland (not a mismatched build); and **they only load on session start** — after a
+  rebuild, reboot / re-login (or run the loader by hand) or `hyprctl plugin list` stays empty.
+- **Official `hyprland-plugins` dropped hyprexpo + hyprtrails** (unmaintained, gone since v0.55). nixpkgs
+  `hyprlandPlugins` has the maintained set: `hyprbars`, `hyprspace` (overview), `hyprfocus`, `hy3`, `hyprgrass`, …
+- **ReGreet drags in `cantarell-fonts`** (its default font) via `fonts.packages`, and cantarell-fonts fails to
+  build on aarch64 → it blocks the whole system build. Gate ReGreet to metal; use tuigreet in the VM.
+- **Screen shaders that sample NEIGHBOURING pixels fight Hyprland's damage tracking** (it only redraws changed
+  regions) → stale ghost/mesh artefacts, plus a single screen shader can't do real multi-pass bloom. Per-pixel
+  shaders are damage-safe. Real bloom needs `debug:damage_tracking = 0` (full redraws — heavy). Hence glow.frag
+  (VM) vs bloom.frag (metal).
+- **home-manager file→dir (or pre-existing) collisions** abort activation ("would be clobbered"). Set
+  `home-manager.backupFileExtension` so they get moved aside instead (now set to `hm-bak`).
+- **VM GL is GLES-only for the compositor.** Client desktop-GL apps struggle: kitty segfaults; ghostty needs
+  `LIBGL_ALWAYS_SOFTWARE=1`; Electron/Firefox may need software GL; hyprpaper/hyprlock/ReGreet may not render.
+  foot/swaybg (CPU) and wlroots-GLES compositor plugins are reliable.
+- **Qt needs `QT_QPA_PLATFORM=wayland`** (set in hyprland.conf `env`) or the Quickshell bar is blank.
+- **`hyprland.conf` must be a read-only store copy, never a writable symlink** — Hyprland autogenerates a
+  default config through a writable symlink and clobbers the repo file (and don't `rm` it while Hyprland runs).
+- **Non-ASCII / Nerd-Font glyphs get stripped when written here** — use `String.fromCharCode(0xXXXX)` in QML.
+- **Hyprland config is version-fast:** `windowrulev2`→`windowrule` block syntax (needs a `name`),
+  `pseudotile` gone, shaders must be `#version 300 es`, `# hyprlang noerror true/false` suppresses
+  config-error banners for plugin config that's parsed before the plugin loads. `tuigreet` is `pkgs.tuigreet`.
+- **git sync in VM:** `git pull`; if it errors, `git fetch && git reset --hard origin/master`, then restore
+  `hosts/vm/hardware.nix` from `~/hw-real.nix`.
 
 ## Docs in repo
-- `docs/walkthrough.md` — the full annotated install journey + gotchas.
-- `docs/ricing-possibilities.md` — the roadmap/checklist of everything riceable.
-- `docs/status.md` — this file.
+- `docs/status.md` — this file (current state).
+- `docs/walkthrough.md` — the annotated install journey.
+- `docs/ricing-possibilities.md` — the roadmap/checklist of what's riced and what's fair game.
