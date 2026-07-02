@@ -44,6 +44,10 @@
   # ---- GPU userspace (Mesa incl. virtio/virgl driver) — needed for Hyprland GL ----
   hardware.graphics.enable = true;
 
+  # ---- Bluetooth (no adapter in the VM, but wired up for real hardware) ----
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
+
   # ---- Wayland compositor ----
   programs.hyprland = {
     enable = true;
@@ -104,6 +108,14 @@
     wl-clipboard   # clipboard
     grim slurp     # screenshots
     brightnessctl  # no-op in a VM, handy on real hardware
+
+    # ---- Control-centre tools (tray applets + audio/bt/display selectors) ----
+    libnotify              # notify-send
+    pavucontrol            # audio device selection (click the bar's volume)
+    blueman                # bluetooth manager + blueman-applet (tray)
+    networkmanagerapplet   # nm-applet (network tray icon)
+    nwg-displays           # display / monitor arrangement (Super+P)
+    playerctl              # media control
   ];
 
   # ---- VM guest niceties (clipboard sharing / dynamic resize with UTM) ----

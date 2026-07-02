@@ -1,4 +1,4 @@
-/* ~/.config/rofi/config.rasi — Catppuccin Mocha */
+/* ~/.config/rofi/config.rasi — Catppuccin Mocha (high-contrast) */
 
 configuration {
     modi: "drun,run,window";
@@ -12,7 +12,8 @@ configuration {
     bg-alt:  #313244;
     fg:      #cdd6f4;
     accent:  #89b4fa;
-    muted:   #6c7086;
+    urgent:  #f38ba8;
+    muted:   #9399b2;
     background-color: transparent;
     text-color: @fg;
 }
@@ -27,38 +28,48 @@ window {
 }
 
 mainbox {
-    children: [ inputbar, listview ];
+    children: [ inputbar, message, listview ];
     spacing: 12px;
+    background-color: transparent;
 }
 
 inputbar {
     background-color: @bg-alt;
+    text-color: @fg;
     border-radius: 12px;
     padding: 10px 14px;
     spacing: 10px;
     children: [ prompt, entry ];
 }
-prompt { text-color: @accent; }
-entry {
-    placeholder: "Search…";
-    placeholder-color: @muted;
+prompt { text-color: @accent; background-color: transparent; }
+entry  { text-color: @fg; background-color: transparent; placeholder: "Search apps..."; placeholder-color: @muted; }
+
+/* error / status messages (this is what was unreadable before) */
+message {
+    background-color: @bg-alt;
+    text-color: @fg;
+    border-radius: 12px;
+    padding: 10px 14px;
 }
+textbox { text-color: @fg; background-color: transparent; }
 
 listview {
     lines: 8;
     columns: 1;
     spacing: 4px;
     scrollbar: false;
+    background-color: transparent;
 }
 
 element {
     padding: 8px 12px;
     border-radius: 10px;
     spacing: 10px;
+    background-color: transparent;
+    text-color: @fg;
 }
-element selected {
-    background-color: @accent;
-    text-color: @bg;
-}
-element-icon { size: 24px; }
-element-text { vertical-align: 0.5; }
+element normal normal    { text-color: @fg; }
+element alternate normal { text-color: @fg; }
+element selected normal   { background-color: @accent; text-color: @bg; }
+element-icon { size: 24px; background-color: transparent; }
+element-text { text-color: inherit; background-color: transparent; vertical-align: 0.5; }

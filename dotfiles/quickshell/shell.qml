@@ -58,6 +58,7 @@ ShellRoot {
                             model: Hyprland.workspaces
                             delegate: Rectangle {
                                 required property var modelData
+                                visible: modelData.id > 0        // hide special workspaces (scratchpad = negative id)
                                 width: modelData.focused ? 30 : 22
                                 height: 22
                                 radius: 11
@@ -147,6 +148,8 @@ ShellRoot {
                         spacing: 6
                         property real vol: Pipewire.defaultAudioSink?.audio?.volume ?? 0
                         property bool muted: Pipewire.defaultAudioSink?.audio?.muted ?? false
+                        TapHandler { onTapped: pavuProc.running = true }   // click → audio settings
+                        Process { id: pavuProc; command: ["pavucontrol"]; running: false }
                         Text {
                             text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028)
                             font.family: "JetBrainsMono Nerd Font"
