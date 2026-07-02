@@ -1,4 +1,4 @@
-/* ~/.config/rofi/config.rasi — Catppuccin Mocha (high-contrast) */
+/* ~/.config/rofi/config.rasi — Catppuccin Mocha (all element states pinned) */
 
 configuration {
     modi: "drun,run,window";
@@ -44,7 +44,6 @@ inputbar {
 prompt { text-color: @accent; background-color: transparent; }
 entry  { text-color: @fg; background-color: transparent; placeholder: "Search apps..."; placeholder-color: @muted; }
 
-/* error / status messages (this is what was unreadable before) */
 message {
     background-color: @bg-alt;
     text-color: @fg;
@@ -65,11 +64,16 @@ element {
     padding: 8px 12px;
     border-radius: 10px;
     spacing: 10px;
-    background-color: transparent;
-    text-color: @fg;
 }
-element normal normal    { text-color: @fg; }
-element alternate normal { text-color: @fg; }
-element selected normal   { background-color: @accent; text-color: @bg; }
+/* every state pinned so no default (cream) background can bleed through */
+element normal    normal { background-color: transparent; text-color: @fg;     }
+element normal    urgent { background-color: transparent; text-color: @urgent; }
+element normal    active { background-color: transparent; text-color: @accent; }
+element alternate normal { background-color: transparent; text-color: @fg;     }
+element alternate urgent { background-color: transparent; text-color: @urgent; }
+element alternate active { background-color: transparent; text-color: @accent; }
+element selected  normal { background-color: @accent;     text-color: @bg;     }
+element selected  urgent { background-color: @urgent;     text-color: @bg;     }
+element selected  active { background-color: @accent;     text-color: @bg;     }
 element-icon { size: 24px; background-color: transparent; }
 element-text { text-color: inherit; background-color: transparent; vertical-align: 0.5; }
