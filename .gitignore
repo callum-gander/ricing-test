@@ -1,0 +1,6 @@
+# Nix build outputs
+result
+result-*
+
+# macOS cruft (you're authoring this from a Mac)
+.DS_Store
