@@ -40,6 +40,18 @@ in
   xdg.configFile."nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/nvim";
 
+  # ---- Batch 2b: notifications / launcher / lock configs ----
+  xdg.configFile."swaync/config.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/swaync/config.json";
+  xdg.configFile."swaync/style.css".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/swaync/style.css";
+  xdg.configFile."rofi/config.rasi".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/rofi/config.rasi";
+  xdg.configFile."hypr/hyprlock.conf".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hyprlock.conf";
+  xdg.configFile."hypr/hypridle.conf".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hypridle.conf";
+
   # ---- User packages ----
   home.packages = with pkgs; [
     quickshell   # QML desktop shell (release from nixpkgs)

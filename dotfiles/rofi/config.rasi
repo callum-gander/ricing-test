@@ -1,0 +1,64 @@
+/* ~/.config/rofi/config.rasi — Catppuccin Mocha */
+
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+* {
+    bg:      #1e1e2e;
+    bg-alt:  #313244;
+    fg:      #cdd6f4;
+    accent:  #89b4fa;
+    muted:   #6c7086;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    background-color: @bg;
+    border: 2px;
+    border-color: @accent;
+    border-radius: 16px;
+    width: 640px;
+    padding: 14px;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing: 12px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius: 12px;
+    padding: 10px 14px;
+    spacing: 10px;
+    children: [ prompt, entry ];
+}
+prompt { text-color: @accent; }
+entry {
+    placeholder: "Search…";
+    placeholder-color: @muted;
+}
+
+listview {
+    lines: 8;
+    columns: 1;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 12px;
+    border-radius: 10px;
+    spacing: 10px;
+}
+element selected {
+    background-color: @accent;
+    text-color: @bg;
+}
+element-icon { size: 24px; }
+element-text { vertical-align: 0.5; }

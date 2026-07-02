@@ -49,6 +49,9 @@
     enable = true;
     xwayland.enable = true;
   };
+
+  # Lock screen — the module also sets up PAM so you can actually *unlock*.
+  programs.hyprlock.enable = true;
   environment.sessionVariables.NIXOS_OZONE_WL = "1";   # hint Electron/Chromium → Wayland
 
   # ---- Login: autologin straight into Hyprland (frictionless VM playground) ----
@@ -91,8 +94,11 @@
     ghostty        # GPU-accelerated terminal — our default (may be GL-limited in the VM)
     foot           # CPU-rendered terminal — rock-solid fallback: Super+Shift+Return
     kitty          # GPU terminal; segfaults on this VM's EGL — kept for reference only
-    fuzzel         # app launcher
-    mako           # notification daemon
+    fuzzel         # app launcher (kept; rofi is now the default $menu)
+    rofi-wayland   # fuller launcher (drun/run/window) — default launcher
+    mako           # (kept; swaync is now the notification daemon)
+    swaynotificationcenter   # notifications + control centre
+    hypridle       # idle daemon (hyprlock itself comes via programs.hyprlock)
     hyprpaper      # wallpaper daemon (needs an image; awww/swaybg are alternatives)
     swaybg         # dead-simple solid-colour background — our current Mocha backdrop
     wl-clipboard   # clipboard
