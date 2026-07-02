@@ -64,8 +64,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hyprlock.conf";
   xdg.configFile."hypr/hypridle.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hypridle.conf";
-  xdg.configFile."hypr/shaders/glow.frag".source =
-    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/shaders/glow.frag";
+  # Symlink the whole shaders DIR (so glow.frag + bloom.frag are both live/hot).
+  xdg.configFile."hypr/shaders".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/shaders";
   xdg.configFile."hypr/hyprpaper.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hyprpaper.conf";
 
@@ -111,6 +112,14 @@ in
     unzip             # mason downloads (mason LSP *binaries* need nix-ld on NixOS)
     tree-sitter
     lua-language-server stylua   # for editing the nvim config itself
+
+    # ---- GUI apps to test (Electron/Firefox lean on GL — in the VM they may need
+    # software rendering: `LIBGL_ALWAYS_SOFTWARE=1 <app>`, Electron ones also
+    # accept `--disable-gpu`. All fine on metal.) ----
+    firefox
+    vscode        # unfree (allowUnfree is set)
+    obsidian      # unfree
+    claude-code   # Claude Code CLI (no official Claude *desktop* app on Linux)
   ];
 
   programs.git.enable = true;
