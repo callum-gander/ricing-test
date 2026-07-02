@@ -1,59 +1,61 @@
-/* ~/.config/swaync/style.css — Catppuccin Mocha */
+/* ~/.config/swaync/style.css — Editorial Paper (warm light) */
 
 * {
-  font-family: "JetBrainsMono Nerd Font";
+  font-family: "Noto Sans";
   font-size: 13px;
 }
 
 .control-center {
-  background: #1e1e2e;
-  border: 2px solid #89b4fa;
-  border-radius: 16px;
-  color: #cdd6f4;
-  padding: 12px;
+  background: #faf8f2;
+  border: 1px solid #d9d2c5;
+  border-radius: 0px;
+  color: #1b1916;
+  padding: 14px;
 }
 
 .widget-title {
-  color: #cdd6f4;
+  color: #1b1916;
   font-size: 15px;
-  margin: 4px 4px 10px 4px;
+  margin: 4px 4px 12px 4px;
 }
 .widget-title button {
-  background: #45475a;
-  color: #cdd6f4;
-  border-radius: 8px;
+  background: #ece7dd;
+  color: #1b1916;
+  border-radius: 0px;
   padding: 4px 10px;
 }
+.widget-title button:hover { background: #e2dccd; }
 
 .widget-dnd {
-  color: #cdd6f4;
+  color: #1b1916;
   margin: 4px;
 }
 .widget-dnd > switch {
-  background: #45475a;
-  border-radius: 12px;
+  background: #ece7dd;
+  border-radius: 0px;
 }
 .widget-dnd > switch:checked {
-  background: #89b4fa;
+  background: #a35e3a;
 }
 
 .notification {
-  background: #313244;
-  border-radius: 12px;
+  background: #fdfbf5;
+  border: 1px solid #e4ddcd;
+  border-radius: 0px;
   margin: 6px 2px;
   padding: 4px;
 }
 .notification-content {
-  color: #cdd6f4;
+  color: #1b1916;
   padding: 8px;
 }
-.notification .summary { color: #cdd6f4; font-weight: bold; }
-.notification .body { color: #bac2de; }
+.notification .summary { color: #1b1916; font-weight: bold; }
+.notification .body { color: #8b8475; }
 
 .close-button {
-  background: #f38ba8;
-  color: #1e1e2e;
-  border-radius: 8px;
+  background: #a35e3a;
+  color: #faf8f2;
+  border-radius: 0px;
   margin: 4px;
 }
-.close-button:hover { background: #eba0ac; }
+.close-button:hover { background: #8a4e30; }

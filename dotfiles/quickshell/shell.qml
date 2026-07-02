@@ -1,8 +1,18 @@
-// ~/.config/quickshell/shell.qml — Catppuccin Mocha bar + control-centre popups
+// ~/.config/quickshell/shell.qml — Editorial Paper bar + control-centre popups
 // ─────────────────────────────────────────────────────────────────────────────
-// logo(→launcher) · workspaces · now-playing | clock | CPU%·RAM% · audio · net · bt · tray
-// Popups: animated fade+slide, auto-size, click-outside to dismiss (HyprlandFocusGrab).
+// Warm-paper masthead: pilcrow(→launcher) · 一二三 workspaces · now-playing |
+// clock (Playfair) | cpu·ram · audio · net · bt · tray.
+// Popups: sharp corners, 1px hairline, rust accent; slide+fade, click-outside dismiss.
 // Icons via String.fromCharCode(0xXXXX) so the source stays pure-ASCII.
+//
+// PALETTE (Editorial Paper)          FONTS
+//   surface  #faf8f2  raised           Playfair Display   clock · titles · wordmark
+//   base     #f4f1e8  desktop          Noto Sans          UI text · values · labels
+//   panel    #ece7dd  inset/tracks     Noto Serif CJK SC  一 二 三 workspace numerals
+//   ink      #1b1916  primary text     JetBrainsMono NF   functional glyphs (icons)
+//   muted    #8b8475  secondary
+//   hairline #d9d2c5  1px rules
+//   accent   #a35e3a  rust (focus/active/selection)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Quickshell
@@ -25,7 +35,7 @@ ShellRoot {
             screen: modelData
 
             anchors { top: true; left: true; right: true }
-            implicitHeight: 40
+            implicitHeight: 38
             color: "transparent"
 
             // dismiss any popup when clicking outside it
@@ -38,26 +48,28 @@ ShellRoot {
             Rectangle {
                 id: bar
                 anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                anchors.topMargin: 8
-                anchors.bottomMargin: 2
-                radius: 14
-                color: "#e61e1e2e"
+                color: "#faf8f2"                       // opaque paper masthead
 
-                // ───────── LEFT: logo(→launcher) · workspaces · now-playing ─────────
+                // masthead underline — a single warm hairline rule
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: 1
+                    color: "#d9d2c5"
+                }
+
+                // ───────── LEFT: wordmark(→launcher) · workspaces · now-playing ─────────
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 12
+                    spacing: 16
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: String.fromCharCode(0x2744)
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 18
-                        color: logoHov.hovered ? "#b4befe" : "#89b4fa"
+                        text: String.fromCharCode(0x00B6)      // ¶ pilcrow — editorial launcher mark
+                        font.family: "Playfair Display"
+                        font.pixelSize: 20
+                        color: logoHov.hovered ? "#a35e3a" : "#1b1916"
                         Behavior on color { ColorAnimation { duration: 120 } }
                         TapHandler { onTapped: rofiProc.running = true }
                         HoverHandler { id: logoHov }
@@ -66,22 +78,39 @@ ShellRoot {
 
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
+                        spacing: 2
                         Repeater {
                             model: Hyprland.workspaces
-                            delegate: Rectangle {
+                            delegate: Item {
                                 required property var modelData
                                 visible: modelData.id > 0
-                                width: modelData.focused ? 30 : 22
-                                height: 22
-                                radius: 11
-                                color: modelData.focused ? "#89b4fa" : modelData.active ? "#585b70" : "#313244"
-                                Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                                Text {
+                                width: 24
+                                height: 34
+                                Column {
                                     anchors.centerIn: parent
-                                    text: modelData.id
-                                    font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12
-                                    color: modelData.focused ? "#1e1e2e" : "#cdd6f4"
+                                    spacing: 3
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        // Chinese numerals 一二三四… built from code points (ASCII-safe source)
+                                        text: {
+                                            var pts = [0x4E00, 0x4E8C, 0x4E09, 0x56DB, 0x4E94,
+                                                       0x516D, 0x4E03, 0x516B, 0x4E5D, 0x5341];
+                                            return (modelData.id >= 1 && modelData.id <= 10)
+                                                ? String.fromCharCode(pts[modelData.id - 1])
+                                                : "" + modelData.id;
+                                        }
+                                        font.family: "Noto Serif CJK SC"
+                                        font.pixelSize: 17
+                                        color: modelData.focused ? "#a35e3a" : "#1b1916"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                    }
+                                    Rectangle {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: 16; height: 2
+                                        color: "#a35e3a"
+                                        opacity: modelData.focused ? 1 : 0
+                                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                                    }
                                 }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: modelData.activate() }
                             }
@@ -98,14 +127,14 @@ ShellRoot {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: (mediaRow.player && mediaRow.player.isPlaying) ? String.fromCharCode(0xF04C) : String.fromCharCode(0xF04B)
-                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#a6e3a1"
+                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#8b8475"
                             TapHandler { onTapped: if (mediaRow.player) mediaRow.player.togglePlaying() }
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 240; elide: Text.ElideRight
                             text: mediaRow.player ? (mediaRow.player.trackTitle + (mediaRow.player.trackArtist ? "  ·  " + mediaRow.player.trackArtist : "")) : ""
-                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4"
+                            font.family: "Noto Sans"; font.pixelSize: 13; color: "#1b1916"
                         }
                     }
                 }
@@ -114,17 +143,17 @@ ShellRoot {
                 Text {
                     id: clock
                     anchors.centerIn: parent
-                    font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#cdd6f4"
+                    font.family: "Playfair Display"; font.pixelSize: 16; color: "#1b1916"
                     Timer {
                         interval: 1000; running: true; repeat: true; triggeredOnStart: true
-                        onTriggered: clock.text = Qt.formatDateTime(new Date(), "ddd d MMM  ·  hh:mm:ss")
+                        onTriggered: clock.text = Qt.formatDateTime(new Date(), "dddd, d MMMM  ·  HH:mm")
                     }
                 }
 
                 // ───────── RIGHT: resources · audio · net · bt · tray ─────────
                 Row {
                     anchors.right: parent.right
-                    anchors.rightMargin: 16
+                    anchors.rightMargin: 18
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 16
 
@@ -142,13 +171,13 @@ ShellRoot {
 
                         Row {
                             spacing: 5
-                            Text { text: String.fromCharCode(0xF2DB); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#a6e3a1" }
-                            Text { id: cpuText; text: "0%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
+                            Text { text: String.fromCharCode(0xF2DB); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#8b8475" }
+                            Text { id: cpuText; text: "0%"; font.family: "Noto Sans"; font.pixelSize: 13; color: "#1b1916" }
                         }
                         Row {
                             spacing: 5
-                            Text { text: String.fromCharCode(0xF1C0); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#f9e2af" }
-                            Text { id: ramText; text: "0%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
+                            Text { text: String.fromCharCode(0xF1C0); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#8b8475" }
+                            Text { id: ramText; text: "0%"; font.family: "Noto Sans"; font.pixelSize: 13; color: "#1b1916" }
                         }
 
                         Process {
@@ -202,15 +231,15 @@ ShellRoot {
                         property real vol: Pipewire.defaultAudioSink?.audio?.volume ?? 0
                         property bool muted: Pipewire.defaultAudioSink?.audio?.muted ?? false
                         TapHandler { onTapped: { sysPopup.open = false; netPopup.open = false; btPopup.open = false; audioPopup.open = !audioPopup.open } }
-                        Text { text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 16; color: "#cba6f7" }
-                        Text { text: Math.round(volRow.vol * 100) + "%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
+                        Text { text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 16; color: "#8b8475" }
+                        Text { text: Math.round(volRow.vol * 100) + "%"; font.family: "Noto Sans"; font.pixelSize: 13; color: "#1b1916" }
                     }
 
                     Text {
                         id: netIcon
                         anchors.verticalCenter: parent.verticalCenter
                         text: String.fromCharCode(0xF1EB)
-                        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#a6e3a1"
+                        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#8b8475"
                         TapHandler { onTapped: { sysPopup.open = false; audioPopup.open = false; btPopup.open = false; netPopup.open = !netPopup.open } }
                     }
 
@@ -218,7 +247,7 @@ ShellRoot {
                         id: btIcon
                         anchors.verticalCenter: parent.verticalCenter
                         text: String.fromCharCode(0xF293)
-                        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#89b4fa"
+                        font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#8b8475"
                         TapHandler { onTapped: { sysPopup.open = false; audioPopup.open = false; netPopup.open = false; btPopup.open = !btPopup.open } }
                     }
 
@@ -253,7 +282,7 @@ ShellRoot {
                 Rectangle {
                     id: audioContent
                     anchors.fill: parent
-                    color: "#1e1e2e"; radius: 16; border.color: "#89b4fa"; border.width: 2
+                    color: "#faf8f2"; radius: 0; border.color: "#d9d2c5"; border.width: 1
                     opacity: audioPopup.open ? 1 : 0
                     transform: Translate { y: audioPopup.open ? 0 : -8; Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
                     Behavior on opacity { NumberAnimation { duration: 160 } }
@@ -262,13 +291,13 @@ ShellRoot {
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 14
                         Item {
-                            width: parent.width; height: 20
-                            Text { anchors.left: parent.left; text: "Audio"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
-                            Text { anchors.right: parent.right; text: Math.round((Pipewire.defaultAudioSink?.audio?.volume ?? 0) * 100) + "%"; color: "#89b4fa"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15 }
+                            width: parent.width; height: 22
+                            Text { anchors.left: parent.left; text: "Audio"; color: "#1b1916"; font.family: "Playfair Display"; font.pixelSize: 16; font.bold: true }
+                            Text { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: Math.round((Pipewire.defaultAudioSink?.audio?.volume ?? 0) * 100) + "%"; color: "#a35e3a"; font.family: "Noto Sans"; font.pixelSize: 14 }
                         }
                         Rectangle {
-                            width: parent.width; height: 12; radius: 6; color: "#45475a"
-                            Rectangle { width: parent.width * (Pipewire.defaultAudioSink?.audio?.volume ?? 0); height: parent.height; radius: 6; color: "#89b4fa" }
+                            width: parent.width; height: 10; radius: 0; color: "#ece7dd"
+                            Rectangle { width: parent.width * (Pipewire.defaultAudioSink?.audio?.volume ?? 0); height: parent.height; radius: 0; color: "#a35e3a" }
                             MouseArea {
                                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                 onPressed: (m) => { if (Pipewire.defaultAudioSink?.audio) Pipewire.defaultAudioSink.audio.volume = Math.max(0, Math.min(1, m.x / width)) }
@@ -276,10 +305,10 @@ ShellRoot {
                             }
                         }
                         Rectangle {
-                            width: parent.width; height: 34; radius: 10
-                            color: pavuMa.containsMouse ? "#585b70" : "#313244"
+                            width: parent.width; height: 34; radius: 0
+                            color: pavuMa.containsMouse ? "#e2dccd" : "#ece7dd"
                             Behavior on color { ColorAnimation { duration: 120 } }
-                            Text { anchors.centerIn: parent; text: "Open pavucontrol"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.centerIn: parent; text: "Open pavucontrol"; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                             MouseArea { id: pavuMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { pavuProc.running = true; audioPopup.open = false } }
                         }
                     }
@@ -301,7 +330,7 @@ ShellRoot {
                 Rectangle {
                     id: netContent
                     anchors.fill: parent
-                    color: "#1e1e2e"; radius: 16; border.color: "#89b4fa"; border.width: 2
+                    color: "#faf8f2"; radius: 0; border.color: "#d9d2c5"; border.width: 1
                     opacity: netPopup.open ? 1 : 0
                     transform: Translate { y: netPopup.open ? 0 : -8; Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
                     Behavior on opacity { NumberAnimation { duration: 160 } }
@@ -309,19 +338,19 @@ ShellRoot {
                         id: netCol
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 12
-                        Text { text: "Network"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
+                        Text { text: "Network"; color: "#1b1916"; font.family: "Playfair Display"; font.pixelSize: 16; font.bold: true }
                         Text {
                             id: netStatus; text: "..."; width: parent.width; wrapMode: Text.WordWrap
-                            color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13
+                            color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 13
                             Process { id: netProc; running: false
                                 command: ["sh", "-c", "n=$(nmcli -t -f NAME connection show --active 2>/dev/null | head -1); [ -n \"$n\" ] && echo \"Connected · $n\" || echo Disconnected"]
                                 stdout: StdioCollector { onStreamFinished: netStatus.text = this.text.trim() } }
                         }
                         Rectangle {
-                            width: parent.width; height: 34; radius: 10
-                            color: netMa.containsMouse ? "#585b70" : "#313244"
+                            width: parent.width; height: 34; radius: 0
+                            color: netMa.containsMouse ? "#e2dccd" : "#ece7dd"
                             Behavior on color { ColorAnimation { duration: 120 } }
-                            Text { anchors.centerIn: parent; text: "Network settings"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.centerIn: parent; text: "Network settings"; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                             MouseArea { id: netMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { netCfgProc.running = true; netPopup.open = false } }
                         }
                     }
@@ -343,7 +372,7 @@ ShellRoot {
                 Rectangle {
                     id: btContent
                     anchors.fill: parent
-                    color: "#1e1e2e"; radius: 16; border.color: "#89b4fa"; border.width: 2
+                    color: "#faf8f2"; radius: 0; border.color: "#d9d2c5"; border.width: 1
                     opacity: btPopup.open ? 1 : 0
                     transform: Translate { y: btPopup.open ? 0 : -8; Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
                     Behavior on opacity { NumberAnimation { duration: 160 } }
@@ -351,19 +380,19 @@ ShellRoot {
                         id: btCol
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 12
-                        Text { text: "Bluetooth"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
+                        Text { text: "Bluetooth"; color: "#1b1916"; font.family: "Playfair Display"; font.pixelSize: 16; font.bold: true }
                         Text {
                             id: btStatus; text: "..."
-                            color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13
+                            color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 13
                             Process { id: btProc; running: false
                                 command: ["sh", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo 'Powered on' || echo 'Off / no adapter'"]
                                 stdout: StdioCollector { onStreamFinished: btStatus.text = this.text.trim() } }
                         }
                         Rectangle {
-                            width: parent.width; height: 34; radius: 10
-                            color: btMa.containsMouse ? "#585b70" : "#313244"
+                            width: parent.width; height: 34; radius: 0
+                            color: btMa.containsMouse ? "#e2dccd" : "#ece7dd"
                             Behavior on color { ColorAnimation { duration: 120 } }
-                            Text { anchors.centerIn: parent; text: "Open Blueman"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.centerIn: parent; text: "Open Blueman"; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                             MouseArea { id: btMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { bluemanProc.running = true; btPopup.open = false } }
                         }
                     }
@@ -384,7 +413,7 @@ ShellRoot {
                 Rectangle {
                     id: sysContent
                     anchors.fill: parent
-                    color: "#1e1e2e"; radius: 16; border.color: "#89b4fa"; border.width: 2
+                    color: "#faf8f2"; radius: 0; border.color: "#d9d2c5"; border.width: 1
                     opacity: sysPopup.open ? 1 : 0
                     transform: Translate { y: sysPopup.open ? 0 : -8; Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
                     Behavior on opacity { NumberAnimation { duration: 160 } }
@@ -392,28 +421,28 @@ ShellRoot {
                         id: sysCol
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 10
-                        Text { text: "System"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
+                        Text { text: "System"; color: "#1b1916"; font.family: "Playfair Display"; font.pixelSize: 16; font.bold: true }
                         Item {
                             width: parent.width; height: 16
-                            Text { anchors.left: parent.left; text: "CPU"; color: "#a6e3a1"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
-                            Text { anchors.right: parent.right; text: Math.round(resRow.cpuPct) + "%"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.left: parent.left; text: "CPU"; color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 13 }
+                            Text { anchors.right: parent.right; text: Math.round(resRow.cpuPct) + "%"; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                         }
-                        Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
-                            Rectangle { width: parent.width * (resRow.cpuPct / 100); height: parent.height; radius: 4; color: "#a6e3a1"; Behavior on width { NumberAnimation { duration: 300 } } } }
+                        Rectangle { width: parent.width; height: 8; radius: 0; color: "#ece7dd"
+                            Rectangle { width: parent.width * (resRow.cpuPct / 100); height: parent.height; radius: 0; color: "#a35e3a"; Behavior on width { NumberAnimation { duration: 300 } } } }
                         Item {
                             width: parent.width; height: 16
-                            Text { anchors.left: parent.left; text: "RAM"; color: "#f9e2af"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
-                            Text { anchors.right: parent.right; text: resRow.ramDetail; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.left: parent.left; text: "RAM"; color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 13 }
+                            Text { anchors.right: parent.right; text: resRow.ramDetail; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                         }
-                        Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
-                            Rectangle { width: parent.width * (resRow.ramPct / 100); height: parent.height; radius: 4; color: "#f9e2af"; Behavior on width { NumberAnimation { duration: 300 } } } }
-                        Text { text: "Load   " + resRow.loadStr; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
-                        Text { text: "Up     " + resRow.uptimeStr; width: parent.width; wrapMode: Text.WordWrap; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
+                        Rectangle { width: parent.width; height: 8; radius: 0; color: "#ece7dd"
+                            Rectangle { width: parent.width * (resRow.ramPct / 100); height: parent.height; radius: 0; color: "#a35e3a"; Behavior on width { NumberAnimation { duration: 300 } } } }
+                        Text { text: "Load   " + resRow.loadStr; color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 12 }
+                        Text { text: "Up     " + resRow.uptimeStr; width: parent.width; wrapMode: Text.WordWrap; color: "#8b8475"; font.family: "Noto Sans"; font.pixelSize: 12 }
                         Rectangle {
-                            width: parent.width; height: 34; radius: 10
-                            color: btopMa.containsMouse ? "#585b70" : "#313244"
+                            width: parent.width; height: 34; radius: 0
+                            color: btopMa.containsMouse ? "#e2dccd" : "#ece7dd"
                             Behavior on color { ColorAnimation { duration: 120 } }
-                            Text { anchors.centerIn: parent; text: "Open btop"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.centerIn: parent; text: "Open btop"; color: "#1b1916"; font.family: "Noto Sans"; font.pixelSize: 13 }
                             MouseArea { id: btopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { btopProc.running = true; sysPopup.open = false } }
                         }
                     }

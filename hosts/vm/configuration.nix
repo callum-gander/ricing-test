@@ -119,8 +119,19 @@
     pulse.enable = true;
   };
 
-  # ---- Fonts (Nerd Font for bar glyphs/icons) ----
-  fonts.packages = [ pkgs.nerd-fonts.jetbrains-mono ];
+  # ---- Fonts (Editorial Paper) ----
+  #   JetBrainsMono Nerd Font — terminal + functional bar glyphs (icons)
+  #   Playfair Display        — display serif: bar clock, ¶ wordmark, hyprlock, titles
+  #   Noto Sans               — UI/body text: bar labels, launcher, notifications
+  #   Noto Serif CJK SC       — the 一 二 三 workspace numerals
+  fonts.packages = with pkgs; [
+    nerd-fonts.jetbrains-mono
+    noto-fonts                # Noto Sans family
+    noto-fonts-cjk-serif      # 一 二 三 — serif CJK for the workspace numerals
+    # Just Playfair Display out of the Google Fonts set (keeps the closure small).
+    # If the rebuild ever errors on the family name, replace this with plain `google-fonts`.
+    (google-fonts.override { fonts = [ "Playfair Display" ]; })
+  ];
 
   # ---- Minimal Wayland rice toolkit (system-wide) ----
   environment.systemPackages = with pkgs; [

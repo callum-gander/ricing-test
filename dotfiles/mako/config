@@ -1,13 +1,13 @@
-# ~/.config/mako/config — Catppuccin Mocha
+# ~/.config/mako/config — Editorial Paper (warm light)
 # Portable: works on any distro with mako. Reload after edits: makoctl reload
 
-font=JetBrainsMono Nerd Font 11
-background-color=#1e1e2e
-text-color=#cdd6f4
-border-color=#89b4fa
-progress-color=over #313244
-border-radius=12
-border-size=2
+font=Noto Sans 11
+background-color=#faf8f2
+text-color=#1b1916
+border-color=#d9d2c5
+progress-color=over #ece7dd
+border-radius=0
+border-size=1
 width=340
 height=140
 padding=14
@@ -16,5 +16,6 @@ default-timeout=6000
 anchor=top-right
 
 [urgency=high]
-border-color=#f38ba8
+border-color=#a3432f
+text-color=#1b1916
 default-timeout=0
