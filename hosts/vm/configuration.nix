@@ -13,6 +13,7 @@
   # ---- Plymouth boot splash (animated; quiet boot) ----
   boot.plymouth.enable = true;
   boot.initrd.systemd.enable = true;
+  boot.initrd.kernelModules = [ "virtio_gpu" ];   # early DRM so Plymouth has something to draw on
   boot.kernelParams = [ "quiet" "splash" ];
   boot.consoleLogLevel = 0;
   boot.initrd.verbose = false;
