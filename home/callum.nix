@@ -23,6 +23,13 @@ in
   xdg.configFile."quickshell/shell.qml".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/quickshell/shell.qml";
 
+  xdg.configFile."foot/foot.ini".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/foot/foot.ini";
+  xdg.configFile."fuzzel/fuzzel.ini".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/fuzzel/fuzzel.ini";
+  xdg.configFile."mako/config".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/mako/config";
+
   # ---- User packages ----
   home.packages = with pkgs; [
     quickshell   # QML desktop shell (release from nixpkgs)

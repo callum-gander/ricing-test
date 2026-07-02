@@ -92,7 +92,8 @@
     foot           # CPU-rendered terminal — reliable in VMs; our default (see hyprland.conf $term)
     fuzzel         # app launcher
     mako           # notification daemon
-    hyprpaper      # wallpaper daemon (enable in hyprland.conf when you add an image)
+    hyprpaper      # wallpaper daemon (needs an image; awww/swaybg are alternatives)
+    swaybg         # dead-simple solid-colour background — our current Mocha backdrop
     wl-clipboard   # clipboard
     grim slurp     # screenshots
     brightnessctl  # no-op in a VM, handy on real hardware

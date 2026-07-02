@@ -243,6 +243,28 @@ Two takeaways worth remembering:
 Reminder: `hyprland.conf` edits **hot-reload** (no rebuild). Installing `foot` is a *system* change,
 so that one needs `sudo nixos-rebuild switch`.
 
+## Ricing pass 1 — Catppuccin Mocha
+
+Everything here is **plain, portable dotfiles** (the whole point) — they'd move to Fedora/Arch
+unchanged. `hyprland.conf`, `shell.qml`, and the app themes **hot-reload**; installing `swaybg` was
+the only *system* change (one `nixos-rebuild`).
+
+- **Palette:** Catppuccin Mocha (base `#1e1e2e`, text `#cdd6f4`, accents blue `#89b4fa` / mauve `#cba6f7`).
+- **`dotfiles/foot/foot.ini`** — terminal: Mocha colours, padding, 94% opacity (blurred by Hyprland).
+- **`dotfiles/fuzzel/fuzzel.ini`** — launcher: Mocha, rounded, accent border.
+- **`dotfiles/mako/config`** — notifications: Mocha, rounded; red border for urgent.
+- **`dotfiles/quickshell/shell.qml`** — the bar became real: snowflake logo · **live workspaces**
+  (`Quickshell.Hyprland`, click to switch) · date/clock · **live volume** (`Quickshell.Services.Pipewire`).
+- **`dotfiles/hypr/hyprland.conf`** — `swaybg` solid backdrop, subtle window opacity, blur behind the bar.
+
+Gotcha logged: Nerd Font glyphs pasted into `shell.qml` kept getting stripped to empty strings in
+transmission, so icons are built with `String.fromCharCode(0xXXXX)` (pure ASCII) rather than literal glyphs.
+
+**Wallpaper note:** `swww` was renamed to **awww** (https://codeberg.org/LGFae/awww) and is **not in
+nixpkgs** — it needs a flake input (`inputs.awww.url = "git+https://codeberg.org/LGFae/awww"`). We used a
+solid `swaybg` backdrop first for reliability; awww (animated wallpapers) is the next step and doubles as
+a lesson in pulling a package nixpkgs doesn't have.
+
 ## Glossary
 
 - **flake** — a repo with a standard `flake.nix` entry point that declares *inputs* (dependencies like
