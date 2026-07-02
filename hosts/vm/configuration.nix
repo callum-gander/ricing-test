@@ -95,7 +95,7 @@
     foot           # CPU-rendered terminal — rock-solid fallback: Super+Shift+Return
     kitty          # GPU terminal; segfaults on this VM's EGL — kept for reference only
     fuzzel         # app launcher (kept; rofi is now the default $menu)
-    rofi-wayland   # fuller launcher (drun/run/window) — default launcher
+    rofi           # fuller launcher (drun/run/window); rofi-wayland was merged into rofi
     mako           # (kept; swaync is now the notification daemon)
     swaynotificationcenter   # notifications + control centre
     hypridle       # idle daemon (hyprlock itself comes via programs.hyprlock)
