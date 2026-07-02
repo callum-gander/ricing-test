@@ -1,22 +1,18 @@
 // ~/.config/quickshell/shell.qml — Catppuccin Mocha bar
 // ─────────────────────────────────────────────────────────────────────────────
-// A real top bar: logo · live workspaces · date/clock · live volume.
-// Portable QML — hot-reloads on save. If it doesn't render, run `quickshell`
-// in a terminal to read the QML error.  Docs: https://quickshell.org/docs/master/
-//
-// Icons are Nerd Font glyphs built with String.fromCharCode(0xXXXX) so the source
-// stays pure-ASCII. If one shows as a box, that codepoint isn't in JetBrainsMono
-// Nerd Font — change the hex.  0x2744 ❄ snowflake · 0xF028 vol-on · 0xF026 vol-off
-// (For the exact NixOS logo use 0xF313 instead of the snowflake.)
+// logo · live workspaces | date/clock | CPU-load · RAM% · volume · system tray
+// Portable QML — hot-reloads on save. Run `quickshell` in a terminal to see errors.
+// Icons via String.fromCharCode(0xXXXX) so the source stays pure-ASCII.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
+import Quickshell.Services.SystemTray
+import Quickshell.Io
 import QtQuick
 
 ShellRoot {
-    // Bind the default sink so we can read its volume/mute below.
     PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
 
     Variants {
@@ -30,7 +26,6 @@ ShellRoot {
             implicitHeight: 40
             color: "transparent"
 
-            // Floating rounded bar (Mocha base @ ~90%)
             Rectangle {
                 id: bar
                 anchors.fill: parent
@@ -39,7 +34,7 @@ ShellRoot {
                 anchors.topMargin: 8
                 anchors.bottomMargin: 2
                 radius: 14
-                color: "#e61e1e2e"   // #AARRGGBB
+                color: "#e61e1e2e"
 
                 // ───────── LEFT: logo + live workspaces ─────────
                 Row {
@@ -50,7 +45,7 @@ ShellRoot {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: String.fromCharCode(0x2744)   // ❄ snowflake (0xF313 = NixOS logo)
+                        text: String.fromCharCode(0x2744)   // ❄ snowflake
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 18
                         color: "#89b4fa"
@@ -60,7 +55,7 @@ ShellRoot {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
                         Repeater {
-                            model: Hyprland.workspaces      // live; fallback: Hyprland.workspaces.values
+                            model: Hyprland.workspaces
                             delegate: Rectangle {
                                 required property var modelData
                                 width: modelData.focused ? 30 : 22
@@ -70,7 +65,6 @@ ShellRoot {
                                      : modelData.active  ? "#585b70"
                                      :                      "#313244"
                                 Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.id
@@ -88,45 +82,103 @@ ShellRoot {
                     }
                 }
 
-                // ───────── CENTER: date · clock ─────────
+                // ───────── CENTRE: date · clock ─────────
                 Text {
                     id: clock
                     anchors.centerIn: parent
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
                     color: "#cdd6f4"
-
                     Timer {
                         interval: 1000; running: true; repeat: true; triggeredOnStart: true
-                        onTriggered: clock.text =
-                            Qt.formatDateTime(new Date(), "ddd d MMM  ·  hh:mm:ss")
+                        onTriggered: clock.text = Qt.formatDateTime(new Date(), "ddd d MMM  ·  hh:mm:ss")
                     }
                 }
 
-                // ───────── RIGHT: live volume ─────────
+                // ───────── RIGHT: resources · volume · tray ─────────
                 Row {
-                    id: volRow
                     anchors.right: parent.right
                     anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
+                    spacing: 18
 
-                    property real vol: Pipewire.defaultAudioSink?.audio?.volume ?? 0
-                    property bool muted: Pipewire.defaultAudioSink?.audio?.muted ?? false
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028)
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 16
-                        color: "#cba6f7"
+                    // resources: CPU load + RAM%
+                    Row {
+                        spacing: 6
+                        Text {
+                            text: String.fromCharCode(0xF2DB)   // microchip
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 14
+                            color: "#a6e3a1"
+                        }
+                        Text {
+                            id: loadText
+                            text: "—"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 13
+                            color: "#cdd6f4"
+                            Process {
+                                id: loadProc
+                                command: ["sh", "-c", "cut -d' ' -f1 /proc/loadavg"]
+                                running: true
+                                stdout: StdioCollector { onStreamFinished: loadText.text = this.text.trim() }
+                            }
+                            Timer { interval: 3000; running: true; repeat: true; onTriggered: loadProc.running = true }
+                        }
+                        Text {
+                            id: ramText
+                            text: "—"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 13
+                            color: "#f9e2af"
+                            Process {
+                                id: ramProc
+                                command: ["sh", "-c", "free | awk 'NR==2{printf \"%d%%\", $3/$2*100}'"]
+                                running: true
+                                stdout: StdioCollector { onStreamFinished: ramText.text = this.text.trim() }
+                            }
+                            Timer { interval: 3000; running: true; repeat: true; onTriggered: ramProc.running = true }
+                        }
                     }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Math.round(volRow.vol * 100) + "%"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 13
-                        color: "#cdd6f4"
+
+                    // volume
+                    Row {
+                        id: volRow
+                        spacing: 6
+                        property real vol: Pipewire.defaultAudioSink?.audio?.volume ?? 0
+                        property bool muted: Pipewire.defaultAudioSink?.audio?.muted ?? false
+                        Text {
+                            text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028)
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 16
+                            color: "#cba6f7"
+                        }
+                        Text {
+                            text: Math.round(volRow.vol * 100) + "%"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 13
+                            color: "#cdd6f4"
+                        }
+                    }
+
+                    // system tray (populates when tray apps are running)
+                    Row {
+                        spacing: 10
+                        Repeater {
+                            model: SystemTray.items
+                            delegate: MouseArea {
+                                required property var modelData
+                                width: 18
+                                height: 18
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: modelData.activate()
+                                Image {
+                                    anchors.fill: parent
+                                    source: modelData.icon
+                                    fillMode: Image.PreserveAspectFit
+                                }
+                            }
+                        }
                     }
                 }
             }
