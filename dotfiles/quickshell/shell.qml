@@ -1,6 +1,6 @@
-// ~/.config/quickshell/shell.qml — Catppuccin Mocha bar + animated control-centre popups
+// ~/.config/shell.qml — Catppuccin Mocha bar + animated control-centre popups
 // ─────────────────────────────────────────────────────────────────────────────
-// logo(→launcher) · workspaces | clock | CPU/RAM · audio · net · bt · tray
+// logo(→launcher) · workspaces | clock | CPU% · RAM% · audio · net · bt · tray
 // Click audio/net/bt → an animated dropdown (fade + slide). Auto-sizes to content.
 // Icons via String.fromCharCode(0xXXXX) so the source stays pure-ASCII.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,11 +49,10 @@ ShellRoot {
                         text: String.fromCharCode(0x2744)
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 18
-                        color: logoTap.hovered ? "#b4befe" : "#89b4fa"
+                        color: logoHov.hovered ? "#b4befe" : "#89b4fa"
                         Behavior on color { ColorAnimation { duration: 120 } }
-                        TapHandler { id: logoTap; onTapped: rofiProc.running = true }
+                        TapHandler { onTapped: rofiProc.running = true }
                         HoverHandler { id: logoHov }
-                        property bool hovered: logoHov.hovered
                         Process { id: rofiProc; command: ["rofi", "-show", "drun"]; running: false }
                     }
 
@@ -98,30 +97,59 @@ ShellRoot {
                     }
                 }
 
-                // ───────── RIGHT: resources · audio · net · bt · tray ─────────
+                // ───────── RIGHT: CPU% · RAM% · audio · net · bt · tray ─────────
                 Row {
                     anchors.right: parent.right
                     anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 16
 
+                    // resources: CPU% (chip) + RAM% (memory)
                     Row {
-                        spacing: 6
-                        Text { text: String.fromCharCode(0xF2DB); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#a6e3a1" }
-                        Text {
-                            id: loadText; text: "—"
-                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4"
-                            Process { id: loadProc; command: ["sh", "-c", "cut -d' ' -f1 /proc/loadavg"]; running: true
-                                stdout: StdioCollector { onStreamFinished: loadText.text = this.text.trim() } }
-                            Timer { interval: 3000; running: true; repeat: true; onTriggered: loadProc.running = true }
+                        id: resRow
+                        spacing: 12
+                        property real prevIdle: -1
+                        property real prevTotal: -1
+
+                        Row {
+                            spacing: 5
+                            Text { text: String.fromCharCode(0xF2DB); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#a6e3a1" }
+                            Text { id: cpuText; text: "0%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
                         }
-                        Text {
-                            id: ramText; text: "—"
-                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#f9e2af"
-                            Process { id: ramProc; command: ["sh", "-c", "free | awk 'NR==2{printf \"%d%%\", $3/$2*100}'"]; running: true
-                                stdout: StdioCollector { onStreamFinished: ramText.text = this.text.trim() } }
-                            Timer { interval: 3000; running: true; repeat: true; onTriggered: ramProc.running = true }
+                        Row {
+                            spacing: 5
+                            Text { text: String.fromCharCode(0xF1C0); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#f9e2af" }
+                            Text { id: ramText; text: "0%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
                         }
+
+                        Process {
+                            id: cpuProc
+                            command: ["sh", "-c", "head -1 /proc/stat"]
+                            running: true
+                            stdout: StdioCollector {
+                                onStreamFinished: {
+                                    var f = this.text.trim().split(/\s+/);
+                                    var idle = parseInt(f[4]) + parseInt(f[5]);
+                                    var total = 0;
+                                    for (var i = 1; i < f.length; i++) total += parseInt(f[i]);
+                                    if (resRow.prevTotal >= 0) {
+                                        var dt = total - resRow.prevTotal;
+                                        var di = idle - resRow.prevIdle;
+                                        cpuText.text = (dt > 0 ? Math.round((1 - di / dt) * 100) : 0) + "%";
+                                    }
+                                    resRow.prevIdle = idle;
+                                    resRow.prevTotal = total;
+                                }
+                            }
+                        }
+                        Timer { interval: 2000; running: true; repeat: true; onTriggered: cpuProc.running = true }
+                        Process {
+                            id: ramProc
+                            command: ["sh", "-c", "free | awk 'NR==2{printf \"%d%%\", $3/$2*100}'"]
+                            running: true
+                            stdout: StdioCollector { onStreamFinished: ramText.text = this.text.trim() }
+                        }
+                        Timer { interval: 2000; running: true; repeat: true; onTriggered: ramProc.running = true }
                     }
 
                     // audio
@@ -240,7 +268,7 @@ ShellRoot {
                         spacing: 12
                         Text { text: "Network"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
                         Text {
-                            id: netStatus; text: "…"; width: parent.width; wrapMode: Text.WordWrap
+                            id: netStatus; text: "..."; width: parent.width; wrapMode: Text.WordWrap
                             color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13
                             Process { id: netProc; running: false
                                 command: ["sh", "-c", "n=$(nmcli -t -f NAME connection show --active 2>/dev/null | head -1); [ -n \"$n\" ] && echo \"Connected · $n\" || echo Disconnected"]
@@ -282,7 +310,7 @@ ShellRoot {
                         spacing: 12
                         Text { text: "Bluetooth"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
                         Text {
-                            id: btStatus; text: "…"
+                            id: btStatus; text: "..."
                             color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13
                             Process { id: btProc; running: false
                                 command: ["sh", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo 'Powered on' || echo 'Off / no adapter'"]
