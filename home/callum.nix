@@ -17,14 +17,12 @@ in
   home.stateVersion = "25.11";   # match system.stateVersion
 
   # ---- The portable rice: symlink plain dotfiles into ~/.config ----
-  # Main Hyprland config = a READ-ONLY store stub that just `source`s the real,
-  # hot-reloadable repo file. Do NOT make ~/.config/hypr/hyprland.conf a writable
-  # symlink into the repo: when Hyprland can't find a config it autogenerates one and
-  # writes it *through* the symlink, clobbering the repo file and breaking git. A
-  # read-only stub can't be clobbered; `source =` keeps the config editable + reloadable.
-  xdg.configFile."hypr/hyprland.conf".text = ''
-    source = ${repo}/dotfiles/hypr/hyprland.conf
-  '';
+  # Main Hyprland config = a READ-ONLY store COPY of the repo file (copied at build time).
+  # Bulletproof: Hyprland reads it directly (no `source` glob to race/fail), and can't write to
+  # it (read-only /nix/store), so it can never autogenerate-clobber the repo file or break git.
+  # Trade-off: editing hyprland.conf needs `nixos-rebuild switch` to take effect — no live
+  # hot-reload for THIS one file. Every other dotfile still hot-reloads as before.
+  xdg.configFile."hypr/hyprland.conf".source = ../dotfiles/hypr/hyprland.conf;
 
   xdg.configFile."quickshell/shell.qml".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/quickshell/shell.qml";
