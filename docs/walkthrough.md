@@ -224,6 +224,20 @@ Two takeaways worth remembering:
 - When docs and the actual eval error disagree, **the eval error wins** — it reflects the exact
   nixpkgs commit you pinned. Confirm attribute paths against `pkgs/by-name/…` in nixpkgs.
 
+**First boot: two Hyprland config errors + kitty wouldn't stay open.**
+- `dwindle:pseudotile does not exist` — `pseudotile` was removed as a dwindle *option* (pseudo is now
+  a per-window dispatcher). Fix: deleted the line.
+- `Invalid dispatcher 'togglesplit'` — `togglesplit` is a **layout message**, not a top-level
+  dispatcher. Fix: `bind = $mod, Space, layoutmsg, togglesplit`.
+- **kitty opened then instantly closed** — kitty needs desktop OpenGL ≥3.3, which the VM's virgl
+  doesn't fully expose (the compositor works because Hyprland uses GLES). Fix: switched the default
+  terminal to **foot**, which renders on the CPU and needs no GL — the standard choice for VMs.
+- Harmless warning `Hyprland was started without start-hyprland` — it's launched directly by greetd
+  rather than via a session wrapper (uwsm); fine for this playground, can be wrapped later.
+
+Reminder: `hyprland.conf` edits **hot-reload** (no rebuild). Installing `foot` is a *system* change,
+so that one needs `sudo nixos-rebuild switch`.
+
 ## Glossary
 
 - **flake** — a repo with a standard `flake.nix` entry point that declares *inputs* (dependencies like

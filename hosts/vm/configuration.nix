@@ -82,7 +82,8 @@
   # ---- Minimal Wayland rice toolkit (system-wide) ----
   environment.systemPackages = with pkgs; [
     git vim wget curl
-    kitty          # terminal (Hyprland default keybind expects it)
+    kitty          # terminal (needs GL ≥3.3 — flaky in the VM, kept as a fallback)
+    foot           # CPU-rendered terminal — reliable in VMs; our default (see hyprland.conf $term)
     fuzzel         # app launcher
     mako           # notification daemon
     hyprpaper      # wallpaper daemon (enable in hyprland.conf when you add an image)
