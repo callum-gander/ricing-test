@@ -229,9 +229,14 @@ Two takeaways worth remembering:
   a per-window dispatcher). Fix: deleted the line.
 - `Invalid dispatcher 'togglesplit'` — `togglesplit` is a **layout message**, not a top-level
   dispatcher. Fix: `bind = $mod, Space, layoutmsg, togglesplit`.
-- **kitty opened then instantly closed** — kitty needs desktop OpenGL ≥3.3, which the VM's virgl
-  doesn't fully expose (the compositor works because Hyprland uses GLES). Fix: switched the default
-  terminal to **foot**, which renders on the CPU and needs no GL — the standard choice for VMs.
+- **kitty opened then instantly closed** — the journal confirmed a hard crash:
+  `.kitty-wrapped … terminated abnormally with signal 11/SEGV … Module libEGL.so.1`. The VM's virgl
+  can give the *compositor* a GLES context (so Hyprland runs) but can't give **kitty** the desktop-GL
+  context it wants — kitty segfaults inside EGL. Fix: switched the default terminal to **foot**, which
+  renders on the CPU and needs no GL — the standard choice for VMs. (No `quickshell` coredumps
+  appeared, so the bar process is fine — Qt Quick tolerates the GL situation.)
+- Enabled `services.openssh` so the VM can be driven from the Mac's Terminal (`ssh callum@<vm-ip>`),
+  avoiding the console/VT dance for future edits.
 - Harmless warning `Hyprland was started without start-hyprland` — it's launched directly by greetd
   rather than via a session wrapper (uwsm); fine for this playground, can be wrapped later.
 

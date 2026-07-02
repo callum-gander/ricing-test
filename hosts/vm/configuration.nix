@@ -14,6 +14,12 @@
   networking.hostName = "vm";
   networking.networkmanager.enable = true;
 
+  # ---- SSH (tinker from your Mac's Terminal — paste-friendly, no TTY dance) ----
+  services.openssh = {
+    enable = true;
+    settings.PasswordAuthentication = true;   # fine for a local VM; ssh callum@<vm-ip>
+  };
+
   # ---- Locale / time (change to taste) ----
   time.timeZone = "Etc/UTC";
   i18n.defaultLocale = "en_US.UTF-8";
