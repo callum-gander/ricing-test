@@ -63,8 +63,9 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-    package = inputs.hyprland.packages.${pkgs.system}.hyprland;                       # flake Hyprland (for plugins)
-    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+    # nixpkgs Hyprland (0.55.x — what this VM already runs). Plugins come from
+    # pkgs.hyprlandPlugins (same nixpkgs) so they're ABI-matched: a Hyprland
+    # plugin MUST be built against the exact Hyprland it loads into.
   };
 
   # Lock screen — the module also sets up PAM so you can actually *unlock*.

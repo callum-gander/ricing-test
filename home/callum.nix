@@ -70,19 +70,20 @@ in
   xdg.configFile."hypr/hyprpaper.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hyprpaper.conf";
 
-  # ---- Hyprland plugins (from the hyprland-plugins flake) ----
-  # nixpkgs' hyprlandPlugins is empty on our pin, so the plugins come from the
-  # hyprland-plugins flake input — built against the SAME flake Hyprland, so the
-  # ABI matches (mismatched plugins refuse to load). We load them at RUNTIME with
-  # hyprctl (hyprland.conf's exec-once calls this), which keeps the /nix/store
-  # paths OUT of the portable hyprland.conf.
+  # ---- Hyprland plugins (from nixpkgs hyprlandPlugins) ----
+  # Built against the SAME nixpkgs Hyprland we run → ABI matches (a plugin must
+  # match its Hyprland's exact ABI or it refuses to load). Loaded at RUNTIME with
+  # hyprctl (hyprland.conf's exec-once calls this), keeping /nix/store paths OUT
+  # of the portable hyprland.conf.
+  #   hyprbars  = per-window title bars
+  #   hyprspace = workspace overview (Super+Tab); maintained replacement for the
+  #               now-removed hyprexpo. (hyprtrails was dropped upstream too.)
   xdg.configFile."hypr/load-plugins.sh" = {
     executable = true;
     text = ''
       #!/bin/sh
-      hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprexpo}/lib/libhyprexpo.so
-      hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprbars}/lib/libhyprbars.so
-      hyprctl plugin load ${inputs.hyprland-plugins.packages.${pkgs.system}.hyprtrails}/lib/libhyprtrails.so
+      hyprctl plugin load ${pkgs.hyprlandPlugins.hyprbars}/lib/libhyprbars.so
+      hyprctl plugin load ${pkgs.hyprlandPlugins.hyprspace}/lib/libhyprspace.so
       hyprctl reload
     '';
   };
