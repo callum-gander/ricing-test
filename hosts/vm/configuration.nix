@@ -10,6 +10,13 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # ---- Plymouth boot splash (animated; quiet boot) ----
+  boot.plymouth.enable = true;
+  boot.initrd.systemd.enable = true;
+  boot.kernelParams = [ "quiet" "splash" ];
+  boot.consoleLogLevel = 0;
+  boot.initrd.verbose = false;
+
   # ---- Networking ----
   networking.hostName = "vm";
   networking.networkmanager.enable = true;
@@ -117,7 +124,7 @@
     nwg-displays           # display / monitor arrangement (Super+P)
     playerctl              # media control
     btop                   # system monitor (resources popup → "Open btop")
-    mpv                    # media player (drives the bar's MPRIS now-playing module)
+    (mpv.override { scripts = [ mpvScripts.mpris ]; })   # media player WITH mpris (drives the bar's now-playing)
   ];
 
   # ---- VM guest niceties (clipboard sharing / dynamic resize with UTM) ----
