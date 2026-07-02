@@ -34,6 +34,9 @@
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
+          # Back up (rather than fail on) any pre-existing/reshaped dotfile that
+          # collides during activation — avoids "would be clobbered" aborts.
+          home-manager.backupFileExtension = "hm-bak";
           home-manager.extraSpecialArgs = { inherit inputs; };
           home-manager.users.callum = import ./home/callum.nix;
         }
