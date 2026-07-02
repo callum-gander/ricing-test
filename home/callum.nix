@@ -16,6 +16,15 @@ in
 {
   home.stateVersion = "25.11";   # match system.stateVersion
 
+  # Cursor theme (crisp, applied to Hyprland + GTK). Bibata is a clean default;
+  # swap for an SVG hyprcursor theme later if you want resolution-independent scaling.
+  home.pointerCursor = {
+    name = "Bibata-Modern-Classic";
+    package = pkgs.bibata-cursors;
+    size = 24;
+    gtk.enable = true;
+  };
+
   # ---- The portable rice: symlink plain dotfiles into ~/.config ----
   # Main Hyprland config = a READ-ONLY store COPY of the repo file (copied at build time).
   # Bulletproof: Hyprland reads it directly (no `source` glob to race/fail), and can't write to
@@ -55,6 +64,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hyprlock.conf";
   xdg.configFile."hypr/hypridle.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/hypridle.conf";
+  xdg.configFile."hypr/shaders/glow.frag".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/hypr/shaders/glow.frag";
 
   # ---- User packages ----
   home.packages = with pkgs; [

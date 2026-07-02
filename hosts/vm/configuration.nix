@@ -117,6 +117,7 @@
     nwg-displays           # display / monitor arrangement (Super+P)
     playerctl              # media control
     btop                   # system monitor (resources popup → "Open btop")
+    mpv                    # media player (drives the bar's MPRIS now-playing module)
   ];
 
   # ---- VM guest niceties (clipboard sharing / dynamic resize with UTM) ----
