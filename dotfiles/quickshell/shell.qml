@@ -1,7 +1,7 @@
-// ~/.config/shell.qml — Catppuccin Mocha bar + animated control-centre popups
+// ~/.config/quickshell/shell.qml — Catppuccin Mocha bar + control-centre popups
 // ─────────────────────────────────────────────────────────────────────────────
-// logo(→launcher) · workspaces | clock | CPU% · RAM% · audio · net · bt · tray
-// Click audio/net/bt → an animated dropdown (fade + slide). Auto-sizes to content.
+// logo(→launcher) · workspaces · now-playing | clock | CPU%·RAM% · audio · net · bt · tray
+// Popups: animated fade+slide, auto-size, click-outside to dismiss (HyprlandFocusGrab).
 // Icons via String.fromCharCode(0xXXXX) so the source stays pure-ASCII.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
+import Quickshell.Services.Mpris
 import Quickshell.Io
 import QtQuick
 
@@ -27,6 +28,13 @@ ShellRoot {
             implicitHeight: 40
             color: "transparent"
 
+            // dismiss any popup when clicking outside it
+            HyprlandFocusGrab {
+                windows: [audioPopup, netPopup, btPopup, sysPopup]
+                active: audioPopup.open || netPopup.open || btPopup.open || sysPopup.open
+                onCleared: { audioPopup.open = false; netPopup.open = false; btPopup.open = false; sysPopup.open = false }
+            }
+
             Rectangle {
                 id: bar
                 anchors.fill: parent
@@ -37,7 +45,7 @@ ShellRoot {
                 radius: 14
                 color: "#e61e1e2e"
 
-                // ───────── LEFT: logo (→ launcher) + live workspaces ─────────
+                // ───────── LEFT: logo(→launcher) · workspaces · now-playing ─────────
                 Row {
                     anchors.left: parent.left
                     anchors.leftMargin: 14
@@ -67,19 +75,37 @@ ShellRoot {
                                 width: modelData.focused ? 30 : 22
                                 height: 22
                                 radius: 11
-                                color: modelData.focused ? "#89b4fa"
-                                     : modelData.active  ? "#585b70"
-                                     :                      "#313244"
+                                color: modelData.focused ? "#89b4fa" : modelData.active ? "#585b70" : "#313244"
                                 Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.id
-                                    font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: 12
+                                    font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12
                                     color: modelData.focused ? "#1e1e2e" : "#cdd6f4"
                                 }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: modelData.activate() }
                             }
+                        }
+                    }
+
+                    // now-playing (MPRIS) — hidden when nothing is playing
+                    Row {
+                        id: mediaRow
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 8
+                        property var player: (Mpris.players && Mpris.players.values && Mpris.players.values.length > 0) ? Mpris.players.values[0] : null
+                        visible: player !== null
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: (mediaRow.player && mediaRow.player.isPlaying) ? String.fromCharCode(0xF04C) : String.fromCharCode(0xF04B)
+                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#a6e3a1"
+                            TapHandler { onTapped: if (mediaRow.player) mediaRow.player.togglePlaying() }
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 240; elide: Text.ElideRight
+                            text: mediaRow.player ? (mediaRow.player.trackTitle + (mediaRow.player.trackArtist ? "  ·  " + mediaRow.player.trackArtist : "")) : ""
+                            font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4"
                         }
                     }
                 }
@@ -88,23 +114,20 @@ ShellRoot {
                 Text {
                     id: clock
                     anchors.centerIn: parent
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
-                    color: "#cdd6f4"
+                    font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; color: "#cdd6f4"
                     Timer {
                         interval: 1000; running: true; repeat: true; triggeredOnStart: true
                         onTriggered: clock.text = Qt.formatDateTime(new Date(), "ddd d MMM  ·  hh:mm:ss")
                     }
                 }
 
-                // ───────── RIGHT: CPU% · RAM% · audio · net · bt · tray ─────────
+                // ───────── RIGHT: resources · audio · net · bt · tray ─────────
                 Row {
                     anchors.right: parent.right
                     anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 16
 
-                    // resources: CPU% + RAM% (click → System popover)
                     Row {
                         id: resRow
                         spacing: 12
@@ -165,23 +188,14 @@ ShellRoot {
                             }
                         }
                         Timer { interval: 2000; running: true; repeat: true; onTriggered: ramProc.running = true }
-                        Process {
-                            id: loadProc
-                            command: ["sh", "-c", "cut -d' ' -f1-3 /proc/loadavg"]
-                            running: true
-                            stdout: StdioCollector { onStreamFinished: resRow.loadStr = this.text.trim() }
-                        }
+                        Process { id: loadProc; command: ["sh", "-c", "cut -d' ' -f1-3 /proc/loadavg"]; running: true
+                            stdout: StdioCollector { onStreamFinished: resRow.loadStr = this.text.trim() } }
                         Timer { interval: 5000; running: true; repeat: true; onTriggered: loadProc.running = true }
-                        Process {
-                            id: uptimeProc
-                            command: ["sh", "-c", "uptime -p | sed 's/^up //'"]
-                            running: true
-                            stdout: StdioCollector { onStreamFinished: resRow.uptimeStr = this.text.trim() }
-                        }
+                        Process { id: uptimeProc; command: ["sh", "-c", "uptime -p | sed 's/^up //'"]; running: true
+                            stdout: StdioCollector { onStreamFinished: resRow.uptimeStr = this.text.trim() } }
                         Timer { interval: 30000; running: true; repeat: true; onTriggered: uptimeProc.running = true }
                     }
 
-                    // audio
                     Row {
                         id: volRow
                         spacing: 6
@@ -224,7 +238,7 @@ ShellRoot {
                 }
             }
 
-            // ════════════ POPUPS (animated: fade + slide) ════════════
+            // ════════════ POPUPS ════════════
 
             PopupWindow {
                 id: audioPopup
@@ -357,7 +371,6 @@ ShellRoot {
                 Process { id: bluemanProc; command: ["blueman-manager"]; running: false }
             }
 
-            // ---- System (resources) ----
             PopupWindow {
                 id: sysPopup
                 property bool open: false
@@ -380,7 +393,6 @@ ShellRoot {
                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
                         spacing: 10
                         Text { text: "System"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
-
                         Item {
                             width: parent.width; height: 16
                             Text { anchors.left: parent.left; text: "CPU"; color: "#a6e3a1"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
@@ -388,7 +400,6 @@ ShellRoot {
                         }
                         Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
                             Rectangle { width: parent.width * (resRow.cpuPct / 100); height: parent.height; radius: 4; color: "#a6e3a1"; Behavior on width { NumberAnimation { duration: 300 } } } }
-
                         Item {
                             width: parent.width; height: 16
                             Text { anchors.left: parent.left; text: "RAM"; color: "#f9e2af"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
@@ -396,10 +407,8 @@ ShellRoot {
                         }
                         Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
                             Rectangle { width: parent.width * (resRow.ramPct / 100); height: parent.height; radius: 4; color: "#f9e2af"; Behavior on width { NumberAnimation { duration: 300 } } } }
-
                         Text { text: "Load   " + resRow.loadStr; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
                         Text { text: "Up     " + resRow.uptimeStr; width: parent.width; wrapMode: Text.WordWrap; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
-
                         Rectangle {
                             width: parent.width; height: 34; radius: 10
                             color: btopMa.containsMouse ? "#585b70" : "#313244"
