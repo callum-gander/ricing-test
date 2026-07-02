@@ -29,6 +29,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/fuzzel/fuzzel.ini";
   xdg.configFile."mako/config".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/mako/config";
+  xdg.configFile."ghostty/config".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/ghostty/config";
 
   # ---- User packages ----
   home.packages = with pkgs; [

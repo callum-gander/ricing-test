@@ -88,8 +88,9 @@
   # ---- Minimal Wayland rice toolkit (system-wide) ----
   environment.systemPackages = with pkgs; [
     git vim wget curl
-    kitty          # terminal (needs GL ≥3.3 — flaky in the VM, kept as a fallback)
-    foot           # CPU-rendered terminal — reliable in VMs; our default (see hyprland.conf $term)
+    ghostty        # GPU-accelerated terminal — our default (may be GL-limited in the VM)
+    foot           # CPU-rendered terminal — rock-solid fallback: Super+Shift+Return
+    kitty          # GPU terminal; segfaults on this VM's EGL — kept for reference only
     fuzzel         # app launcher
     mako           # notification daemon
     hyprpaper      # wallpaper daemon (needs an image; awww/swaybg are alternatives)
