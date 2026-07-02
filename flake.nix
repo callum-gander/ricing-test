@@ -10,6 +10,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Hyprland flake — newest Hyprland + first-party plugins (not in the nixpkgs pin).
+    hyprland.url = "github:hyprwm/Hyprland";
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+    };
+
     # OPTIONAL: track Quickshell's git directly instead of the nixpkgs release.
     # We default to `pkgs.quickshell` (from nixpkgs) for simplicity + stability.
     # Uncomment this and use `inputs.quickshell.packages.${system}.default` in

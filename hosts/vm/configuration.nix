@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
 #
 # SYSTEM LAYER — this is the Nix-specific part.
 # It does NOT port verbatim to Fedora/Arch, but every `enable = true` here maps
@@ -42,6 +42,9 @@
 
   # ---- Nix: turn on flakes + the new CLI ----
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # Hyprland's binary cache — download prebuilt Hyprland/plugins instead of a long compile.
+  nix.settings.extra-substituters = [ "https://hyprland.cachix.org" ];
+  nix.settings.extra-trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
   nixpkgs.config.allowUnfree = true;
 
   # ---- SHARP-EDGE MITIGATION ----
@@ -60,26 +63,34 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
+    package = inputs.hyprland.packages.${pkgs.system}.hyprland;                       # flake Hyprland (for plugins)
+    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   };
 
   # Lock screen — the module also sets up PAM so you can actually *unlock*.
   programs.hyprlock.enable = true;
   environment.sessionVariables.NIXOS_OZONE_WL = "1";   # hint Electron/Chromium → Wayland
 
-  # ---- Login: autologin straight into Hyprland (frictionless VM playground) ----
-  # If you log out, tuigreet appears so you can pick a session.
+  # ---- Login ----
+  # initial_session = autologin into Hyprland on boot. This is the SAFETY NET:
+  # even if the graphical greeter can't render under the VM's limited GL, boot
+  # still lands you in a session (reboot always recovers). The greeter shown on
+  # LOGOUT is ReGreet (programs.regreet below) — it owns greetd's default_session
+  # via mkDefault, running ReGreet inside a `cage` kiosk compositor.
   services.greetd = {
     enable = true;
-    settings = {
-      initial_session = {
-        command = "Hyprland";
-        user = "callum";
-      };
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
-        user = "greeter";
-      };
+    settings.initial_session = {
+      command = "Hyprland";
+      user = "callum";
     };
+  };
+
+  # ReGreet — graphical greetd greeter (GTK4). A portable win for real hardware
+  # (Fedora); in the VM it may render blank (GTK4/GL), but the autologin above
+  # means that's harmless. Pulls in `cage` automatically.
+  programs.regreet = {
+    enable = true;
+    settings.GTK.application_prefer_dark_theme = true;
   };
 
   # ---- Portals (screenshare, file pickers) ----
