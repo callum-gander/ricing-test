@@ -73,24 +73,34 @@
   environment.sessionVariables.NIXOS_OZONE_WL = "1";   # hint Electron/Chromium → Wayland
 
   # ---- Login ----
-  # initial_session = autologin into Hyprland on boot. This is the SAFETY NET:
-  # even if the graphical greeter can't render under the VM's limited GL, boot
-  # still lands you in a session (reboot always recovers). The greeter shown on
-  # LOGOUT is ReGreet (programs.regreet below) — it owns greetd's default_session
-  # via mkDefault, running ReGreet inside a `cage` kiosk compositor.
+  # initial_session = autologin into Hyprland on boot (safety net: you always land
+  # straight in a session, and a reboot always recovers).
+  # default_session = greeter shown on LOGOUT. In the VM we use tuigreet, a TTY
+  # greeter that renders fine here. ReGreet (GTK4, below) is nicer but needs real
+  # GL (blank in the VM) AND pulls cantarell-fonts, which currently fails to build
+  # on aarch64 -- so it is gated to real hardware.
   services.greetd = {
     enable = true;
-    settings.initial_session = {
-      command = "Hyprland";
-      user = "callum";
+    settings = {
+      initial_session = {
+        command = "Hyprland";
+        user = "callum";
+      };
+      # If you enable programs.regreet (on metal), this mkIf steps aside so
+      # ReGreet's own default_session (set via mkDefault) takes over -- one-liner.
+      default_session = lib.mkIf (!config.programs.regreet.enable) {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        user = "greeter";
+      };
     };
   };
 
-  # ReGreet — graphical greetd greeter (GTK4). A portable win for real hardware
-  # (Fedora); in the VM it may render blank (GTK4/GL), but the autologin above
-  # means that's harmless. Pulls in `cage` automatically.
+  # ReGreet -- graphical GTK4 greeter. METAL ONLY: won't render under the VM's GL,
+  # and its default Cantarell font fails to build on aarch64. On real hardware just
+  # set enable = true (it owns greetd's default_session; the mkIf above steps
+  # aside). Optionally point programs.regreet.font at a font that's installed.
   programs.regreet = {
-    enable = true;
+    enable = false;
     settings.GTK.application_prefer_dark_theme = true;
   };
 
