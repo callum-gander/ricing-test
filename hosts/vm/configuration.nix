@@ -116,6 +116,7 @@
     networkmanagerapplet   # nm-applet (network tray icon)
     nwg-displays           # display / monitor arrangement (Super+P)
     playerctl              # media control
+    btop                   # system monitor (resources popup → "Open btop")
   ];
 
   # ---- VM guest niceties (clipboard sharing / dynamic resize with UTM) ----

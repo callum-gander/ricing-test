@@ -104,12 +104,18 @@ ShellRoot {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 16
 
-                    // resources: CPU% (chip) + RAM% (memory)
+                    // resources: CPU% + RAM% (click → System popover)
                     Row {
                         id: resRow
                         spacing: 12
                         property real prevIdle: -1
                         property real prevTotal: -1
+                        property real cpuPct: 0
+                        property real ramPct: 0
+                        property string ramDetail: ""
+                        property string loadStr: ""
+                        property string uptimeStr: ""
+                        TapHandler { onTapped: { audioPopup.open = false; netPopup.open = false; btPopup.open = false; sysPopup.open = !sysPopup.open } }
 
                         Row {
                             spacing: 5
@@ -135,7 +141,9 @@ ShellRoot {
                                     if (resRow.prevTotal >= 0) {
                                         var dt = total - resRow.prevTotal;
                                         var di = idle - resRow.prevIdle;
-                                        cpuText.text = (dt > 0 ? Math.round((1 - di / dt) * 100) : 0) + "%";
+                                        var pct = dt > 0 ? Math.round((1 - di / dt) * 100) : 0;
+                                        resRow.cpuPct = pct;
+                                        cpuText.text = pct + "%";
                                     }
                                     resRow.prevIdle = idle;
                                     resRow.prevTotal = total;
@@ -145,11 +153,32 @@ ShellRoot {
                         Timer { interval: 2000; running: true; repeat: true; onTriggered: cpuProc.running = true }
                         Process {
                             id: ramProc
-                            command: ["sh", "-c", "free | awk 'NR==2{printf \"%d%%\", $3/$2*100}'"]
+                            command: ["sh", "-c", "free -m | awk 'NR==2{printf \"%d %d %d\", $3, $2, $3/$2*100}'"]
                             running: true
-                            stdout: StdioCollector { onStreamFinished: ramText.text = this.text.trim() }
+                            stdout: StdioCollector {
+                                onStreamFinished: {
+                                    var p = this.text.trim().split(/\s+/);
+                                    resRow.ramPct = parseInt(p[2]);
+                                    ramText.text = p[2] + "%";
+                                    resRow.ramDetail = (parseInt(p[0]) / 1024).toFixed(1) + " / " + (parseInt(p[1]) / 1024).toFixed(1) + " GB";
+                                }
+                            }
                         }
                         Timer { interval: 2000; running: true; repeat: true; onTriggered: ramProc.running = true }
+                        Process {
+                            id: loadProc
+                            command: ["sh", "-c", "cut -d' ' -f1-3 /proc/loadavg"]
+                            running: true
+                            stdout: StdioCollector { onStreamFinished: resRow.loadStr = this.text.trim() }
+                        }
+                        Timer { interval: 5000; running: true; repeat: true; onTriggered: loadProc.running = true }
+                        Process {
+                            id: uptimeProc
+                            command: ["sh", "-c", "uptime -p | sed 's/^up //'"]
+                            running: true
+                            stdout: StdioCollector { onStreamFinished: resRow.uptimeStr = this.text.trim() }
+                        }
+                        Timer { interval: 30000; running: true; repeat: true; onTriggered: uptimeProc.running = true }
                     }
 
                     // audio
@@ -158,7 +187,7 @@ ShellRoot {
                         spacing: 6
                         property real vol: Pipewire.defaultAudioSink?.audio?.volume ?? 0
                         property bool muted: Pipewire.defaultAudioSink?.audio?.muted ?? false
-                        TapHandler { onTapped: { netPopup.open = false; btPopup.open = false; audioPopup.open = !audioPopup.open } }
+                        TapHandler { onTapped: { sysPopup.open = false; netPopup.open = false; btPopup.open = false; audioPopup.open = !audioPopup.open } }
                         Text { text: volRow.muted ? String.fromCharCode(0xF026) : String.fromCharCode(0xF028); font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 16; color: "#cba6f7" }
                         Text { text: Math.round(volRow.vol * 100) + "%"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13; color: "#cdd6f4" }
                     }
@@ -168,7 +197,7 @@ ShellRoot {
                         anchors.verticalCenter: parent.verticalCenter
                         text: String.fromCharCode(0xF1EB)
                         font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#a6e3a1"
-                        TapHandler { onTapped: { audioPopup.open = false; btPopup.open = false; netPopup.open = !netPopup.open } }
+                        TapHandler { onTapped: { sysPopup.open = false; audioPopup.open = false; btPopup.open = false; netPopup.open = !netPopup.open } }
                     }
 
                     Text {
@@ -176,7 +205,7 @@ ShellRoot {
                         anchors.verticalCenter: parent.verticalCenter
                         text: String.fromCharCode(0xF293)
                         font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; color: "#89b4fa"
-                        TapHandler { onTapped: { audioPopup.open = false; netPopup.open = false; btPopup.open = !btPopup.open } }
+                        TapHandler { onTapped: { sysPopup.open = false; audioPopup.open = false; netPopup.open = false; btPopup.open = !btPopup.open } }
                     }
 
                     Row {
@@ -326,6 +355,61 @@ ShellRoot {
                     }
                 }
                 Process { id: bluemanProc; command: ["blueman-manager"]; running: false }
+            }
+
+            // ---- System (resources) ----
+            PopupWindow {
+                id: sysPopup
+                property bool open: false
+                parentWindow: panel
+                relativeX: panel.width - 430
+                relativeY: panel.height + 4
+                visible: open || sysContent.opacity > 0.01
+                implicitWidth: 300
+                implicitHeight: sysCol.implicitHeight + 36
+                color: "transparent"
+                Rectangle {
+                    id: sysContent
+                    anchors.fill: parent
+                    color: "#1e1e2e"; radius: 16; border.color: "#89b4fa"; border.width: 2
+                    opacity: sysPopup.open ? 1 : 0
+                    transform: Translate { y: sysPopup.open ? 0 : -8; Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                    Column {
+                        id: sysCol
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+                        spacing: 10
+                        Text { text: "System"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 15; font.bold: true }
+
+                        Item {
+                            width: parent.width; height: 16
+                            Text { anchors.left: parent.left; text: "CPU"; color: "#a6e3a1"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.right: parent.right; text: Math.round(resRow.cpuPct) + "%"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                        }
+                        Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
+                            Rectangle { width: parent.width * (resRow.cpuPct / 100); height: parent.height; radius: 4; color: "#a6e3a1"; Behavior on width { NumberAnimation { duration: 300 } } } }
+
+                        Item {
+                            width: parent.width; height: 16
+                            Text { anchors.left: parent.left; text: "RAM"; color: "#f9e2af"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            Text { anchors.right: parent.right; text: resRow.ramDetail; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                        }
+                        Rectangle { width: parent.width; height: 8; radius: 4; color: "#45475a"
+                            Rectangle { width: parent.width * (resRow.ramPct / 100); height: parent.height; radius: 4; color: "#f9e2af"; Behavior on width { NumberAnimation { duration: 300 } } } }
+
+                        Text { text: "Load   " + resRow.loadStr; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
+                        Text { text: "Up     " + resRow.uptimeStr; width: parent.width; wrapMode: Text.WordWrap; color: "#bac2de"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 12 }
+
+                        Rectangle {
+                            width: parent.width; height: 34; radius: 10
+                            color: btopMa.containsMouse ? "#585b70" : "#313244"
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Text { anchors.centerIn: parent; text: "Open btop"; color: "#cdd6f4"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
+                            MouseArea { id: btopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { btopProc.running = true; sysPopup.open = false } }
+                        }
+                    }
+                }
+                Process { id: btopProc; command: ["foot", "btop"]; running: false }
             }
         }
     }
