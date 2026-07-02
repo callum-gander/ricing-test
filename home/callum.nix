@@ -32,12 +32,46 @@ in
   xdg.configFile."ghostty/config".source =
     config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/ghostty/config";
 
+  # ---- Batch 1: CLI / dev rice configs ----
+  xdg.configFile."starship.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/starship.toml";
+  xdg.configFile."zellij/config.kdl".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/zellij/config.kdl";
+  xdg.configFile."nvim".source =
+    config.lib.file.mkOutOfStoreSymlink "${repo}/dotfiles/nvim";
+
   # ---- User packages ----
   home.packages = with pkgs; [
     quickshell   # QML desktop shell (release from nixpkgs)
     # To use bleeding-edge Quickshell instead, enable the flake input in flake.nix
     # and swap this for: inputs.quickshell.packages.${pkgs.system}.default
+
+    # ---- Batch 1: CLI / dev rice ----
+    starship          # prompt
+    fastfetch         # system info + logo
+    zellij            # terminal multiplexer
+    lazygit           # git TUI
+    eza bat           # nicer ls / cat
+    # Neovim (LazyVim) + runtime deps
+    neovim
+    ripgrep fd        # telescope grep / find
+    gcc gnumake       # treesitter parser compilation
+    nodejs            # some tools / LSPs
+    unzip             # mason downloads (mason LSP *binaries* need nix-ld on NixOS)
+    tree-sitter
+    lua-language-server stylua   # for editing the nvim config itself
   ];
 
   programs.git.enable = true;
+
+  programs.bash = {
+    enable = true;
+    initExtra = ''
+      eval "$(starship init bash)"
+      alias ls="eza --icons --group-directories-first"
+      alias ll="eza -l --icons --git --group-directories-first"
+      alias la="eza -la --icons --git --group-directories-first"
+      alias cat="bat --paging=never"
+    '';
+  };
 }

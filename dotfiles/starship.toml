@@ -1,0 +1,24 @@
+# ~/.config/starship.toml — clean Catppuccin Mocha prompt
+# Portable. Glyphs are \u escapes so the source stays ASCII (they render via the Nerd Font).
+# (We can make it a fancy powerline later once the base is confirmed.)
+
+"$schema" = 'https://starship.rs/config-schema.json'
+add_newline = true
+
+format = "$directory$git_branch$git_status $character"
+
+[directory]
+style = "bold #89b4fa"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+style = "bold #cba6f7"
+
+[git_status]
+style = "bold #fab387"
+
+[character]
+success_symbol = "[❯](bold #a6e3a1)"
+error_symbol = "[❯](bold #f38ba8)"

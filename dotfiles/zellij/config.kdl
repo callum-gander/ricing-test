@@ -1,0 +1,6 @@
+// ~/.config/zellij/config.kdl — Catppuccin Mocha
+// Portable. catppuccin-mocha is a built-in zellij theme.
+
+theme "catppuccin-mocha"
+pane_frames false
+default_layout "compact"
