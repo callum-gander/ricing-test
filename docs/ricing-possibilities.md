@@ -74,6 +74,9 @@ layer (wiring the look to live system state) is where it becomes genuinely botto
 
 ## 10. System-wide theming
 - [x] Manual Catppuccin Mocha (foot/ghostty/rofi/mako/swaync/hyprland/quickshell/zellij/nvim/starship)
+- [~] **Editorial Paper** — warm-light alt palette (sharp corners, hairline rules, rust accent,
+      Playfair Display + Noto Sans, 一二三四 CJK workspaces). Prototyped on branch
+      `theme/editorial-paper`; full write-up in `docs/status.md`.
 - [x] Nerd Font (JetBrains Mono)
 - [~] Cursor theme (Bibata). GTK/Qt themes (qt5ct/Kvantum), icon theme (Papirus/Tela) still open.
 - [ ] **Stylix** (Nix) — one base16 palette auto-themes everything
